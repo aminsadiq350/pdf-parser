@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Notebook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script type="importmap">
+        { "imports": { "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js" } }
+    </script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        [v-cloak] { display: none; }
+        .katex-display { overflow-x: auto; overflow-y: hidden; }
+
+        /* Typing indicator */
+        .typing-dot { animation: typingBounce 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Settings slide */
+        .settings-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .settings-panel.open {
+            max-height: 400px;
+            opacity: 1;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        /* Toast animation */
+        .toast-enter { animation: toastIn 0.3s ease forwards; }
+        .toast-exit { animation: toastOut 0.3s ease forwards; }
+        @keyframes toastIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes toastOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
+
+        /* Message enter animation */
+        .msg-enter { animation: msgSlideIn 0.25s ease forwards; }
+        @keyframes msgSlideIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Prose overrides for user messages */
+        .user-msg-prose .prose { color: inherit; }
+        .user-msg-prose .prose p { color: inherit; margin: 0; }
+        .user-msg-prose .prose strong { color: inherit; }
+        .user-msg-prose .prose code { color: inherit; background: rgba(255,255,255,0.15); }
+
+        /* Scrollbar styling */
+        #chat-container::-webkit-scrollbar { width: 4px; }
+        #chat-container::-webkit-scrollbar-track { background: transparent; }
+        #chat-container::-webkit-scrollbar-thumb { background: #a1a1aa; border-radius: 2px; }
+        .dark #chat-container::-webkit-scrollbar-thumb { background: #52525b; }
+
+        /* Connection dot pulse */
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body class="h-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
+    <div id="app" v-cloak class="h-full flex overflow-hidden relative">
+        
+        <!-- Left Sidebar: Documents -->
+        <aside class="w-72 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col p-4 space-y-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">Notebook</h1>
+                <button @click="toggleDarkMode" class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">
+                    <i :class="['fa-solid', isDarkMode ? 'fa-sun' : 'fa-moon']"></i>
+                </button>
+            </div>
+            <button @click="$refs.fileInputRef.click()" class="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Import PDF</button>
+            <input type="file" multiple accept=".pdf" class="hidden" ref="fileInputRef" @change="handleFileUpload" />
+            
+            <div class="flex-1 overflow-y-auto space-y-2">
+                <div v-for="doc in documents" :key="doc.id" @click="activeDocId = doc.id"
+                    :class="['p-3 rounded-lg cursor-pointer text-sm truncate transition', activeDocId === doc.id ? 'bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800']">
+                    <i class="fa-solid fa-file-pdf mr-2"></i> {{ doc.name }}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center: Viewer -->
+        <main class="flex-1 flex flex-col bg-zinc-100 dark:bg-zinc-950 overflow-hidden">
+            <div v-if="activeDoc" class="h-full flex flex-col p-6 overflow-hidden">
+                <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 flex-1 flex flex-col overflow-hidden">
+                    <div class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800">
+                        <span class="font-medium truncate text-sm">{{ activeDoc.name }}</span>
+                        <div class="flex items-center gap-3">
+                            <button @click="prevPage" class="px-2 py-1 bg-white dark:bg-zinc-900 border rounded hover:bg-zinc-100"><i class="fa-solid fa-chevron-left"></i></button>
+                            <span class="text-xs">{{ currentPage }} / {{ activeDoc.numPages }}</span>
+                            <button @click="nextPage" class="px-2 py-1 bg-white dark:bg-zinc-900 border rounded hover:bg-zinc-100"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 flex justify-center bg-zinc-100 dark:bg-zinc-950">
+                        <canvas ref="pdfCanvasRef" class="shadow-lg max-w-full h-auto"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="flex-1 flex items-center justify-center text-zinc-400">Select a document to view</div>
+        </main>
+
+        <!-- Right: Chat Panel -->
+        <section class="w-96 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 flex flex-col">
+            
+            <!-- Chat Header -->
+            <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-comments text-indigo-500"></i>
+                    <span class="font-semibold text-sm">Chat</span>
+                    <span v-if="userApiKey" class="flex items-center gap-1 text-[10px] text-emerald-500 font-medium ml-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot inline-block"></span>
+                        Ready
+                    </span>
+                    <span v-else class="flex items-center gap-1 text-[10px] text-zinc-400 font-medium ml-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 inline-block"></span>
+                        No key
+                    </span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button @click="clearChat" class="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" title="Clear chat">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                    <button @click="showSettings = !showSettings"
+                        :class="['p-2 rounded-lg transition', showSettings ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300']"
+                        title="Settings">
+                        <i class="fa-solid fa-gear text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Collapsible Settings -->
+            <div :class="['settings-panel px-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50', showSettings ? 'open' : '']">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Provider</label>
+                        <div class="flex gap-2">
+                            <button @click="selectedProvider = 'openrouter'"
+                                :class="['flex-1 py-2 px-3 text-xs font-medium rounded-lg border transition',
+                                    selectedProvider === 'openrouter'
+                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                        : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-indigo-300 dark:hover:border-indigo-700']">
+                                OpenRouter
+                            </button>
+                            <button @click="selectedProvider = 'gemini'"
+                                :class="['flex-1 py-2 px-3 text-xs font-medium rounded-lg border transition',
+                                    selectedProvider === 'gemini'
+                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                        : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-indigo-300 dark:hover:border-indigo-700']">
+                                Gemini
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">API Key</label>
+                        <div class="relative">
+                            <input v-model="userApiKey" :type="showApiKey ? 'text' : 'password'" placeholder="Enter your API key…"
+                                class="w-full p-2.5 pr-9 text-sm rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition">
+                            <button @click="showApiKey = !showApiKey" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                                <i :class="['fa-solid text-xs', showApiKey ? 'fa-eye-slash' : 'fa-eye']"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Model</label>
+                        <input v-model="selectedModel" :placeholder="modelPlaceholder"
+                            class="w-full p-2.5 text-sm rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition">
+                        <p class="text-[10px] text-zinc-400 mt-1">{{ modelHint }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chat-container" ref="chatContainerRef">
+                <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center px-6">
+                    <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-robot text-indigo-500 text-xl"></i>
+                    </div>
+                    <p class="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">Ask me anything</p>
+                    <p class="text-xs text-zinc-400">Import a PDF and ask questions about its content</p>
+                </div>
+
+                <div v-for="msg in messages" :key="msg.id" class="msg-enter">
+                    <div v-if="msg.role === 'user'" class="flex justify-end">
+                        <div class="user-msg-prose max-w-[85%] px-4 py-2.5 rounded-2xl rounded-br-md bg-indigo-600 text-white text-sm shadow-sm">
+                            <div v-katex-html="formatMessage(msg.text)"></div>
+                        </div>
+                    </div>
+                    <div v-else class="flex justify-start gap-2.5">
+                        <div class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i class="fa-solid fa-robot text-[10px] text-zinc-500 dark:text-zinc-400"></i>
+                        </div>
+                        <div class="max-w-[85%]">
+                            <div class="px-4 py-2.5 rounded-2xl rounded-bl-md bg-zinc-100 dark:bg-zinc-800 text-sm prose dark:prose-invert prose-sm max-w-none">
+                                <div v-katex-html="formatMessage(msg.text)"></div>
+                            </div>
+                            <div v-if="msg.error" class="flex items-center gap-1 mt-1 ml-1">
+                                <i class="fa-solid fa-circle-exclamation text-[10px] text-red-400"></i>
+                                <span class="text-[10px] text-red-400">Failed to get response</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="isTyping" class="flex justify-start gap-2.5 msg-enter">
+                    <div class="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-robot text-[10px] text-zinc-500 dark:text-zinc-400"></i>
+                    </div>
+                    <div class="px-4 py-3 rounded-2xl rounded-bl-md bg-zinc-100 dark:bg-zinc-800 flex items-center gap-1.5">
+                        <span class="typing-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-500 inline-block"></span>
+                        <span class="typing-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-500 inline-block"></span>
+                        <span class="typing-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-500 inline-block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <form @submit.prevent="sendMessage" class="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div class="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 py-1 focus-within:ring-2 focus-within:ring-indigo-400/50 transition">
+                    <input type="text" v-model="inputQuery" :disabled="isTyping"
+                        placeholder="Ask anything about the doc…"
+                        class="flex-1 py-2.5 bg-transparent border-0 outline-none text-sm placeholder-zinc-400">
+                    <button type="submit" :disabled="!inputQuery.trim() || isTyping"
+                        :class="['p-2 rounded-lg transition-all duration-200',
+                            inputQuery.trim() && !isTyping
+                                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm scale-100'
+                                : 'text-zinc-300 dark:text-zinc-600 scale-95 cursor-not-allowed']">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+                <p v-if="!userApiKey" class="text-[10px] text-amber-500 mt-2 flex items-center gap-1 px-1">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Add an API key in settings to enable AI responses
+                </p>
+            </form>
+        </section>
+
+        <!-- Toast Notifications -->
+        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none">
+            <div v-for="toast in toasts" :key="toast.id"
+                :class="['pointer-events-auto px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2',
+                    toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white',
+                    toast.leaving ? 'toast-exit' : 'toast-enter']">
+                <i :class="['fa-solid', toast.type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check']"></i>
+                {{ toast.message }}
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createApp, ref, computed, watch, nextTick, shallowRef } from 'vue';
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const app = createApp({
+            directives: {
+                'katex-html': {
+                    mounted(el, binding) {
+                        el.innerHTML = binding.value;
+                        if (window.renderMathInElement) renderMathInElement(el);
+                    },
+                    updated(el, binding) {
+                        if (el.innerHTML !== binding.value) {
+                            el.innerHTML = binding.value;
+                            if (window.renderMathInElement) renderMathInElement(el);
+                        }
+                    }
+                }
+            },
+            setup() {
+                // --- Core state ---
+                const isDarkMode = ref(localStorage.getItem('dark_mode') === 'true');
+                const documents = ref([]);
+                const activeDocId = ref(null);
+                const pdfCanvasRef = ref(null);
+                const currentPage = ref(1);
+                const currentPdfDoc = shallowRef(null);
+
+                // --- Chat state ---
+                const messages = ref([]);
+                const inputQuery = ref("");
+                const isTyping = ref(false);
+                const chatContainerRef = ref(null);
+
+                // --- Settings state ---
+                const showSettings = ref(false);
+                const showApiKey = ref(false);
+                const userApiKey = ref(localStorage.getItem('api_key') || "");
+                const selectedProvider = ref(localStorage.getItem('provider') || "openrouter");
+                const selectedModel = ref(localStorage.getItem('model') || "");
+
+                // --- Toasts ---
+                const toasts = ref([]);
+                const showToast = (message, type = 'error') => {
+                    const id = Date.now();
+                    toasts.value.push({ id, message, type, leaving: false });
+                    setTimeout(() => {
+                        const t = toasts.value.find(x => x.id === id);
+                        if (t) t.leaving = true;
+                        setTimeout(() => { toasts.value = toasts.value.filter(x => x.id !== id); }, 300);
+                    }, 3500);
+                };
+
+                // --- Computed ---
+                const activeDoc = computed(() => documents.value.find(d => d.id === activeDocId.value));
+                const modelPlaceholder = computed(() => selectedProvider.value === 'gemini' ? 'e.g. gemini-2.5-flash' : 'e.g. google/gemini-2.5-flash');
+                const modelHint = computed(() => selectedProvider.value === 'gemini'
+                    ? 'Uses Gemini API directly'
+                    : 'Any model from openrouter.ai/models');
+
+                // --- Dark mode ---
+                const toggleDarkMode = () => {
+                    isDarkMode.value = !isDarkMode.value;
+                    localStorage.setItem('dark_mode', isDarkMode.value);
+                    document.documentElement.classList.toggle('dark', isDarkMode.value);
+                };
+                document.documentElement.classList.toggle('dark', isDarkMode.value);
+
+                // --- Persist settings ---
+                watch(userApiKey, (v) => localStorage.setItem('api_key', v));
+                watch(selectedProvider, (v) => localStorage.setItem('provider', v));
+                watch(selectedModel, (v) => localStorage.setItem('model', v));
+
+                // --- Formatting ---
+                const formatMessage = (t) => DOMPurify.sanitize(marked.parse(t || ''));
+
+                // --- Scroll helper ---
+                const scrollToBottom = () => {
+                    nextTick(() => {
+                        const el = chatContainerRef.value;
+                        if (el) el.scrollTop = el.scrollHeight;
+                    });
+                };
+
+                // --- PDF handling ---
+                const handleFileUpload = async (e) => {
+                    for (const file of e.target.files) {
+                        const buffer = await file.arrayBuffer();
+                        const pdf = await pdfjsLib.getDocument({ data: buffer.slice(0) }).promise;
+                        documents.value.push({ id: Date.now(), name: file.name, data: buffer, numPages: pdf.numPages });
+                    }
+                };
+
+                const renderPage = async (num) => {
+                    if (!currentPdfDoc.value || !pdfCanvasRef.value) return;
+                    const page = await currentPdfDoc.value.getPage(num);
+                    const vp = page.getViewport({ scale: 1.5 });
+                    const canvas = pdfCanvasRef.value;
+                    canvas.height = vp.height; canvas.width = vp.width;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                };
+
+                watch(activeDocId, async (id) => {
+                    if (!id) return;
+                    const doc = documents.value.find(d => d.id === id);
+                    currentPdfDoc.value = await pdfjsLib.getDocument({ data: doc.data.slice(0) }).promise;
+                    currentPage.value = 1;
+                    await nextTick();
+                    renderPage(1);
+                });
+
+                watch(currentPage, (num) => renderPage(num));
+
+                // --- Extract text from current PDF ---
+                const extractPdfText = async () => {
+                    if (!currentPdfDoc.value) return '';
+                    const parts = [];
+                    const n = currentPdfDoc.value.numPages;
+                    for (let i = 1; i <= n; i++) {
+                        const page = await currentPdfDoc.value.getPage(i);
+                        const content = await page.getTextContent();
+                        const text = content.items.map(item => item.str).join(' ');
+                        if (text.trim()) parts.push(`[Page ${i}]\n${text}`);
+                    }
+                    return parts.join('\n\n');
+                };
+
+                // --- Build API request ---
+                const buildApiPayload = (chatHistory, pdfContext) => {
+                    const identity = 'You are "Notebook", an AI assistant built into a PDF reader app. Never claim to be made by OpenAI, GPT, or any other model. You are Notebook.';
+                    const systemPrompt = pdfContext
+                        ? `${identity}\n\nYou help users understand the PDF document they are reading. Here is the full document text:\n\n${pdfContext}\n\nAnswer questions based on this content. Use markdown formatting. If the answer is not in the document, say so clearly.`
+                        : `${identity}\n\nNo PDF is currently loaded. Let the user know they can import a PDF to ask questions about it. You can still answer general questions. Use markdown formatting.`;
+
+                    if (selectedProvider.value === 'gemini') {
+                        const contents = [];
+                        contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
+                        contents.push({ role: 'model', parts: [{ text: 'Understood. I will answer questions based on the provided document.' }] });
+                        
+                        for (const msg of chatHistory) {
+                            contents.push({
+                                role: msg.role === 'user' ? 'user' : 'model',
+                                parts: [{ text: msg.text }]
+                            });
+                        }
+                        return { contents };
+                    } else {
+                        const apiMessages = [{ role: 'system', content: systemPrompt }];
+                        for (const msg of chatHistory) {
+                            apiMessages.push({
+                                role: msg.role === 'user' ? 'user' : 'assistant',
+                                content: msg.text
+                            });
+                        }
+                        const model = selectedModel.value || 'google/gemini-2.5-flash';
+                        return { model, messages: apiMessages, stream: true };
+                    }
+                };
+
+                const getApiUrl = () => {
+                    const model = selectedModel.value || (selectedProvider.value === 'gemini' ? 'gemini-2.5-flash' : 'google/gemini-2.5-flash');
+                    if (selectedProvider.value === 'gemini') {
+                        return `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${userApiKey.value}`;
+                    }
+                    return 'https://openrouter.ai/api/v1/chat/completions';
+                };
+
+                const getApiHeaders = () => {
+                    if (selectedProvider.value === 'gemini') {
+                        return { 'Content-Type': 'application/json' };
+                    }
+                    return {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userApiKey.value}`,
+                    };
+                };
+
+                // --- Send message & stream response ---
+                const sendMessage = async () => {
+                    const text = inputQuery.value.trim();
+                    if (!text || isTyping.value) return;
+
+                    messages.value.push({ id: Date.now(), role: 'user', text });
+                    inputQuery.value = '';
+                    scrollToBottom();
+
+                    if (!userApiKey.value) {
+                        showSettings.value = true;
+                        showToast('Please add an API key to get AI responses', 'error');
+                        return;
+                    }
+
+                    isTyping.value = true;
+                    scrollToBottom();
+
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 60000);
+
+                    let botMsg = null;
+
+                    try {
+                        let pdfContext = await extractPdfText();
+                        if (pdfContext.length > 80000) {
+                            pdfContext = pdfContext.slice(0, 80000) + '\n\n[...document truncated due to length...]';
+                        }
+
+                        const history = messages.value.filter(m => !m.error);
+                        const payload = buildApiPayload(history, pdfContext);
+                        const url = getApiUrl();
+                        const headers = getApiHeaders();
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify(payload),
+                            signal: controller.signal,
+                        });
+
+                        if (!response.ok) {
+                            const errBody = await response.text();
+                            let errMsg = `API error (${response.status})`;
+                            try {
+                                const errJson = JSON.parse(errBody);
+                                errMsg = errJson.error?.message || errJson.message || errMsg;
+                            } catch {}
+                            throw new Error(errMsg);
+                        }
+
+                        botMsg = { id: Date.now() + 1, role: 'bot', text: '' };
+                        messages.value.push(botMsg);
+                        isTyping.value = false;
+                        scrollToBottom();
+
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let buffer = '';
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop();
+
+                            for (const line of lines) {
+                                const trimmed = line.trim();
+                                if (!trimmed || trimmed === 'data: [DONE]') continue;
+                                if (!trimmed.startsWith('data: ')) continue;
+
+                                try {
+                                    const json = JSON.parse(trimmed.slice(6));
+                                    let chunk = '';
+
+                                    if (selectedProvider.value === 'gemini') {
+                                        chunk = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                                    } else {
+                                        chunk = json.choices?.[0]?.delta?.content || '';
+                                    }
+
+                                    if (chunk) {
+                                        botMsg.text += chunk;
+                                        scrollToBottom();
+                                    }
+                                } catch {}
+                            }
+                        }
+
+                        // Post-process: strip safety metadata from the final text
+                        if (botMsg.text) {
+                            botMsg.text = botMsg.text
+                                .replace(/\n*(User|Response)\s*Safety\s*:\s*\w+/gi, '')
+                                .trimEnd();
+                        }
+
+                        if (!botMsg.text) {
+                            botMsg.text = 'I received an empty response. Please try again.';
+                            botMsg.error = true;
+                        }
+
+                    } catch (err) {
+                        isTyping.value = false;
+                        const errText = err.name === 'AbortError'
+                            ? 'Request timed out. The PDF may be too large or the API is slow.'
+                            : err.message;
+                        if (!botMsg) {
+                            messages.value.push({
+                                id: Date.now() + 1,
+                                role: 'bot',
+                                text: `**Error:** ${errText}`,
+                                error: true
+                            });
+                        } else if (!botMsg.text) {
+                            botMsg.text = `**Error:** ${errText}`;
+                            botMsg.error = true;
+                        }
+                        showToast(errText, 'error');
+                    } finally {
+                        clearTimeout(timeout);
+                        isTyping.value = false;
+                        scrollToBottom();
+                    }
+                };
+
+                // --- Clear chat ---
+                const clearChat = () => {
+                    messages.value = [];
+                    showToast('Chat cleared', 'success');
+                };
+
+                // --- Navigation ---
+                const prevPage = () => { if (currentPage.value > 1) currentPage.value--; };
+                const nextPage = () => { if (activeDoc.value && currentPage.value < activeDoc.value.numPages) currentPage.value++; };
+
+                return {
+                    isDarkMode, toggleDarkMode,
+                    documents, activeDocId, pdfCanvasRef, currentPage, activeDoc,
+                    messages, inputQuery, isTyping, chatContainerRef,
+                    showSettings, showApiKey, userApiKey, selectedProvider, selectedModel,
+                    modelPlaceholder, modelHint,
+                    toasts, showToast,
+                    handleFileUpload, formatMessage, sendMessage, clearChat,
+                    prevPage, nextPage
+                };
+            }
+        });
+        app.mount('#app');
+    </script>
+</body>
+</html>
