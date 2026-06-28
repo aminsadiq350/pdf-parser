@@ -16,7 +16,7 @@ describe('formatMessage', () => {
 
   it('handles empty / nullish input', () => {
     expect(formatMessage('')).toBe('')
-    // @ts-expect-error testing null tolerance
     expect(formatMessage(null)).toBe('')
+    expect(formatMessage(undefined)).toBe('')
   })
 })
