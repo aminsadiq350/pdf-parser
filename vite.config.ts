@@ -19,7 +19,7 @@ export default defineConfig({
 		// PDF.js worker; runtime-caches PDF.js standard fonts and Tesseract
 		// CDN assets.
 		VitePWA({
-			registerType: 'prompt',
+			registerType: 'autoUpdate',
 			injectRegister: false,
 			includeAssets: [
 				'icons/favicon.svg',
