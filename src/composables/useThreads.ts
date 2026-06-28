@@ -119,6 +119,13 @@ async function handleDocDeleted(docId: number): Promise<void> {
   )
 }
 
+async function rename(threadId: number, name: string): Promise<void> {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  await db.threads.update(threadId, { name: trimmed, updatedAt: Date.now() })
+  bumpThreadInState(threadId, { name: trimmed })
+}
+
 export interface UseThreadsReturn {
   threads: Ref<Thread[]>
   activeThreadId: Ref<number | null>
@@ -134,6 +141,7 @@ export interface UseThreadsReturn {
   updateMessage: typeof updateMessage
   clearMessages: typeof clearMessages
   handleDocDeleted: typeof handleDocDeleted
+  rename: typeof rename
 }
 
 export function useThreads(): UseThreadsReturn {
@@ -152,5 +160,6 @@ export function useThreads(): UseThreadsReturn {
     updateMessage,
     clearMessages,
     handleDocDeleted,
+    rename,
   }
 }

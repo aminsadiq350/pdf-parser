@@ -81,4 +81,12 @@ describe('useDocuments', () => {
     await docs.delete(d.id!)
     expect(docs.activeId.value).toBeNull()
   })
+
+  it('rename updates Dexie + reactive state', async () => {
+    const docs = useDocuments()
+    const [d] = await docs.importFiles([makeFile('a.pdf')])
+    await docs.rename(d.id!, 'Renamed.pdf')
+    expect(docs.documents.value[0].name).toBe('Renamed.pdf')
+    expect((await db.documents.get(d.id!))?.name).toBe('Renamed.pdf')
+  })
 })

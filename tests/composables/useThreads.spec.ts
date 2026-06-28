@@ -94,4 +94,12 @@ describe('useThreads', () => {
     expect(t.threads.value.find((x) => x.id === b.id)!.docIds).toEqual([])
     expect(t.threads.value.find((x) => x.id === c.id)!.docIds).toEqual([3])
   })
+
+  it('rename updates the thread name + reactive state', async () => {
+    const t = useThreads()
+    const thread = await t.create({ docIds: [], name: 'Old' })
+    await t.rename(thread.id!, 'New name')
+    expect(t.threads.value[0].name).toBe('New name')
+    expect((await db.threads.get(thread.id!))?.name).toBe('New name')
+  })
 })

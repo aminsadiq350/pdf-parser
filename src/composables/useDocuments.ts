@@ -61,6 +61,19 @@ async function getBlob(id: number): Promise<Blob | null> {
   return row?.blob ?? null
 }
 
+async function rename(id: number, name: string): Promise<void> {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  await db.documents.update(id, { name: trimmed })
+  documents.value = documents.value.map((d) => (d.id === id ? { ...d, name: trimmed } : d))
+  // Re-index so BM25 retriever's stored docName stays in sync.
+  const doc = documents.value.find((d) => d.id === id)
+  if (doc) {
+    const { getRetriever } = await import('@/lib/retrieval/index')
+    await getRetriever().indexDocument({ id, name: trimmed, pages: doc.pages })
+  }
+}
+
 export interface UseDocumentsReturn {
   documents: Ref<Document[]>
   activeId: Ref<number | null>
@@ -68,6 +81,7 @@ export interface UseDocumentsReturn {
   importFiles: typeof importFiles
   select: typeof select
   delete: typeof deleteDoc
+  rename: typeof rename
   getBlob: typeof getBlob
   loadAll: typeof loadAll
 }
@@ -80,6 +94,7 @@ export function useDocuments(): UseDocumentsReturn {
     importFiles,
     select,
     delete: deleteDoc,
+    rename,
     getBlob,
     loadAll,
   }
