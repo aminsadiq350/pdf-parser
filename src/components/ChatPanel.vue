@@ -11,6 +11,8 @@ import { useSettings } from '@/composables/useSettings'
 import { useThreads } from '@/composables/useThreads'
 import { useDocuments } from '@/composables/useDocuments'
 import { useToasts } from '@/composables/useToasts'
+import { useDrawers } from '@/composables/useDrawers'
+import { useResponsive } from '@/composables/useResponsive'
 import { buildThreadMarkdown, downloadMarkdown, slugify } from '@/lib/exportThread'
 
 const { messages, isTyping, isStreaming, send, clear, abort } = useChat()
@@ -18,6 +20,8 @@ const { provider, apiKey, model, modelPlaceholder, modelHint } = useSettings()
 const { activeThread, rename: renameThread } = useThreads()
 const { documents } = useDocuments()
 const { show: showToast } = useToasts()
+const drawers = useDrawers()
+const { isPhone } = useResponsive()
 
 const showSettings = ref(false)
 const showApiKey = ref(false)
@@ -29,6 +33,30 @@ function focusInput() {
   inputRef.value?.focus()
 }
 defineExpose({ focusInput })
+
+// Mobile-aware shell classes. At md+, the panel renders as a static w-96
+// column exactly as before. Below md, it becomes a transformed overlay —
+// right-slide drawer on tablets, bottom sheet on phones.
+const shellClasses = computed(() => {
+  const base = [
+    'bg-white dark:bg-zinc-900 flex flex-col',
+    // Mobile overlay: fixed, transformed off-screen, transitions on open.
+    'fixed z-40 transform transition-transform duration-200 will-change-transform',
+    // Tablet drawer: right slide.
+    'inset-y-0 right-0 w-96 max-w-[85vw] border-l border-zinc-200 dark:border-zinc-800',
+    drawers.right.value ? 'translate-x-0' : 'translate-x-full',
+    // Phone bottom sheet override: full width, ~85vh tall, rounded top.
+    'max-sm:inset-x-0 max-sm:right-0 max-sm:left-0 max-sm:top-auto max-sm:bottom-0',
+    'max-sm:w-full max-sm:max-w-none max-sm:h-[85vh] max-sm:rounded-t-2xl max-sm:border-l-0',
+    'max-sm:shadow-2xl',
+    drawers.right.value
+      ? 'max-sm:translate-x-0 max-sm:translate-y-0'
+      : 'max-sm:translate-x-0 max-sm:translate-y-full',
+    // Desktop reset.
+    'md:static md:z-auto md:translate-x-0 md:w-96 md:max-w-none md:h-auto md:rounded-none md:shadow-none md:border-l md:transition-none',
+  ]
+  return base
+})
 
 const headerLabel = computed(() => {
   const t = activeThread.value
@@ -77,9 +105,16 @@ function onExport() {
 </script>
 
 <template>
-  <section
-    class="w-96 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 flex flex-col"
-  >
+  <section :class="shellClasses">
+    <!-- Phone-only sheet grip handle -->
+    <div
+      v-if="isPhone"
+      class="md:hidden flex justify-center py-1.5 cursor-grab"
+      @click="drawers.closeAll"
+      aria-hidden="true"
+    >
+      <span class="block w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+    </div>
     <div
       class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900"
     >
@@ -132,6 +167,13 @@ function onExport() {
           @click="showSettings = !showSettings"
         >
           <i class="fa-solid fa-gear text-xs"></i>
+        </button>
+        <button
+          class="md:hidden p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+          aria-label="Close chat"
+          @click="drawers.closeAll"
+        >
+          <i class="fa-solid fa-xmark text-xs"></i>
         </button>
       </div>
     </div>

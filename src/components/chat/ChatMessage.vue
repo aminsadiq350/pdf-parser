@@ -7,6 +7,7 @@ import { renderCitationsHtml } from '@/lib/citations'
 import { useDocuments } from '@/composables/useDocuments'
 import { usePdfViewer } from '@/composables/usePdfViewer'
 import { useCitationPreview } from '@/composables/useCitationPreview'
+import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 
 const props = defineProps<{ msg: Msg }>()
 const root = ref<HTMLElement | null>(null)
@@ -37,6 +38,9 @@ function onClick(e: MouseEvent) {
   const pageNumber = Number.parseInt(btn.getAttribute('data-page') ?? '', 10)
   if (Number.isFinite(docId) && Number.isFinite(pageNumber)) {
     void jumpToPage(docId, pageNumber)
+    // On mobile the chat is an overlay; dismiss it so the user sees the
+    // viewer they just jumped to.
+    closeDrawersIfMobile()
   }
 }
 
