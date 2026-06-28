@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseCitations, renderCitationsHtml } from '@/lib/citations'
+import { parseCitations, renderCitationsHtml, renderCitationsText } from '@/lib/citations'
 import type { Citation, Document } from '@/types/domain'
 
 describe('parseCitations', () => {
@@ -69,5 +69,24 @@ describe('renderCitationsHtml', () => {
     const html = renderCitationsHtml('[A:p1]', [{ docId: 1, pageNumber: 1 }], evil)
     expect(html).not.toContain('<script>')
     expect(html).toContain('&lt;script&gt;')
+  })
+})
+
+describe('renderCitationsText', () => {
+  const docs: Document[] = [
+    { id: 7, name: 'physics.pdf', size: 1, numPages: 5, pages: [], addedAt: 0 },
+  ]
+  it('replaces tokens with readable text refs', () => {
+    const t = renderCitationsText('see [A:p3]', [{ docId: 7, pageNumber: 3 }], docs)
+    expect(t).toBe('see [physics.pdf · p.3]')
+  })
+  it('shows (removed) for stale citations', () => {
+    const t = renderCitationsText('[A:p3]', [{ docId: 999, pageNumber: 3 }], docs)
+    expect(t).toBe('[(removed) · p.3]')
+  })
+  it('leaves token untouched when citations run out', () => {
+    const t = renderCitationsText('[A:p1] [B:p2]', [{ docId: 7, pageNumber: 1 }], docs)
+    expect(t).toContain('[physics.pdf · p.1]')
+    expect(t).toContain('[B:p2]')
   })
 })

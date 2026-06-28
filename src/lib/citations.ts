@@ -54,3 +54,24 @@ export function renderCitationsHtml(
     )
   })
 }
+
+/**
+ * Like renderCitationsHtml but plain text. Used by the markdown exporter.
+ * No escaping (caller is responsible for any wrapping format).
+ */
+export function renderCitationsText(
+  text: string,
+  citations: Citation[] | undefined,
+  docs: readonly Document[],
+): string {
+  if (!citations || citations.length === 0) return text
+  let idx = 0
+  return text.replace(TOKEN_RE, (match) => {
+    const cite = citations[idx]
+    idx++
+    if (!cite) return match
+    const doc = docs.find((d) => d.id === cite.docId)
+    const name = doc?.name ?? '(removed)'
+    return `[${name} · p.${cite.pageNumber}]`
+  })
+}
