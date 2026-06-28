@@ -1,7 +1,16 @@
 // Vitest global setup. Extend as tests grow.
 import { vi } from 'vitest'
 import { createRequire } from 'node:module'
+import { Blob as NodeBlob, File as NodeFile } from 'node:buffer'
 import 'fake-indexeddb/auto'
+
+// jsdom's Blob isn't recognised by Node's structuredClone, which fake-indexeddb
+// uses to persist values. Replace the global Blob/File with the Node-native
+// versions so binary data round-trips through Dexie under jsdom.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+globalThis.Blob = NodeBlob as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+globalThis.File = NodeFile as any
 
 // Mock localStorage with an in-memory shim so useSettings tests run cleanly.
 class MemoryStorage {
