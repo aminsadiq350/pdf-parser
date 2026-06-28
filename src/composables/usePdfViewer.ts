@@ -1,6 +1,7 @@
 import { ref, shallowRef, watch } from 'vue'
 import type * as pdfjsLib from 'pdfjs-dist'
 import { loadPdfFromBlob } from '@/lib/pdf'
+import { useDocuments } from './useDocuments'
 
 const currentPdf = shallowRef<pdfjsLib.PDFDocumentProxy | null>(null)
 const currentPage = ref(1)
@@ -11,6 +12,7 @@ let canvas: HTMLCanvasElement | null = null
 // PDF.js never sees two render() calls on the same canvas at once.
 let drawChain: Promise<void> = Promise.resolve()
 let activeRender: pdfjsLib.RenderTask | null = null
+let pendingJumpPage: number | null = null
 
 async function setActive(blob: Blob | null): Promise<void> {
   if (!blob) {
@@ -19,7 +21,6 @@ async function setActive(blob: Blob | null): Promise<void> {
     return
   }
   const pdf = await loadPdfFromBlob(blob)
-  // Setting these triggers the watch below, which schedules a draw.
   currentPdf.value = pdf
   numPages.value = pdf.numPages
   currentPage.value = 1
@@ -27,7 +28,6 @@ async function setActive(blob: Blob | null): Promise<void> {
 
 function bindCanvas(el: HTMLCanvasElement | null) {
   canvas = el
-  // If a PDF is already loaded and the canvas just mounted (v-if), draw.
   if (canvas && currentPdf.value) void drawCurrent()
 }
 
@@ -67,6 +67,16 @@ watch([currentPdf, currentPage], () => {
   if (canvas) void drawCurrent()
 })
 
+// When a new PDF finishes loading after a cross-doc jumpToPage, fire the
+// queued page change.
+watch(currentPdf, async () => {
+  if (pendingJumpPage != null && currentPdf.value) {
+    const target = pendingJumpPage
+    pendingJumpPage = null
+    await goTo(target)
+  }
+})
+
 async function goTo(page: number) {
   if (!currentPdf.value) return
   if (page < 1 || page > numPages.value) return
@@ -80,6 +90,32 @@ function next() {
   void goTo(currentPage.value + 1)
 }
 
+/**
+ * Cross-doc-aware jump used by citation chips.
+ * - Same doc, already loaded: just goTo(pageNumber).
+ * - Different doc: switch active doc and queue the jump for when the PDF loads.
+ */
+async function jumpToPage(docId: number, pageNumber: number): Promise<void> {
+  const { activeId, select } = useDocuments()
+  if (activeId.value === docId && currentPdf.value) {
+    await goTo(pageNumber)
+    return
+  }
+  pendingJumpPage = pageNumber
+  if (activeId.value !== docId) select(docId)
+}
+
 export function usePdfViewer() {
-  return { currentPdf, currentPage, numPages, setActive, bindCanvas, drawCurrent, prev, next, goTo }
+  return {
+    currentPdf,
+    currentPage,
+    numPages,
+    setActive,
+    bindCanvas,
+    drawCurrent,
+    prev,
+    next,
+    goTo,
+    jumpToPage,
+  }
 }
