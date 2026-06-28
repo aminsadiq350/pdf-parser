@@ -1,24 +1,46 @@
-import { ref } from 'vue'
-import type { ChatMessage } from '@/types/domain'
+import { ref, computed, type Ref, type ComputedRef } from 'vue'
+import { db } from '@/lib/db'
+import type { Message } from '@/types/domain'
 import { buildPayload } from '@/lib/llm/promptBuilder'
 import { OPENROUTER_URL, openRouterHeaders } from '@/lib/llm/openrouter'
 import { geminiUrl, geminiHeaders } from '@/lib/llm/gemini'
 import { SseReader, extractDelta } from '@/lib/llm/streamParser'
 import { useSettings } from './useSettings'
 import { useToasts } from './useToasts'
+import { useThreads } from './useThreads'
 
-const messages = ref<ChatMessage[]>([])
 const isTyping = ref(false)
-let nextId = 1
-
 const { provider, apiKey, model } = useSettings()
 const { show } = useToasts()
+const threads = useThreads()
 
-async function send(text: string, pdfText: string): Promise<void> {
+async function buildPdfContext(docIds: number[]): Promise<string> {
+  if (docIds.length === 0) return ''
+  const parts: string[] = []
+  for (const id of docIds) {
+    const doc = await db.documents.get(id)
+    if (!doc) continue
+    parts.push(`[Document: ${doc.name}]`)
+    for (const p of doc.pages) {
+      parts.push(`[Page ${p.pageNumber}]\n${p.text}`)
+    }
+  }
+  return parts.join('\n\n')
+}
+
+async function send(text: string): Promise<void> {
   const trimmed = text.trim()
   if (!trimmed || isTyping.value) return
 
-  messages.value.push({ id: nextId++, role: 'user', text: trimmed })
+  const thread = threads.activeThread.value
+  if (!thread) {
+    show('Open or create a thread first', 'error')
+    return
+  }
+
+  // Persist the user message immediately so it stays visible even if the API
+  // call fails or the key is missing.
+  await threads.appendMessage({ threadId: thread.id!, role: 'user', text: trimmed })
 
   if (!apiKey.value) {
     show('Please add an API key to get AI responses', 'error')
@@ -29,13 +51,16 @@ async function send(text: string, pdfText: string): Promise<void> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 60_000)
 
-  let assistant: ChatMessage | null = null
+  let assistant: Message | null = null
 
   try {
-    const history = messages.value.filter((m) => !m.error)
+    const pdfText = await buildPdfContext(thread.docIds)
+    const history = threads.activeMessages.value.filter((m) => !m.error)
     const payload = buildPayload({
       provider: provider.value,
-      model: model.value || (provider.value === 'gemini' ? 'gemini-2.5-flash' : 'google/gemini-2.5-flash'),
+      model:
+        model.value ||
+        (provider.value === 'gemini' ? 'gemini-2.5-flash' : 'google/gemini-2.5-flash'),
       history,
       pdfText,
     })
@@ -60,18 +85,22 @@ async function send(text: string, pdfText: string): Promise<void> {
         const parsed = JSON.parse(body) as { error?: { message?: string }; message?: string }
         msg = parsed.error?.message ?? parsed.message ?? msg
       } catch {
-        // body wasn't JSON
+        /* not JSON */
       }
       throw new Error(msg)
     }
 
-    assistant = { id: nextId++, role: 'assistant', text: '' }
-    messages.value.push(assistant)
+    assistant = await threads.appendMessage({
+      threadId: thread.id!,
+      role: 'assistant',
+      text: '',
+    })
     isTyping.value = false
 
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
     const sse = new SseReader()
+    let buffered = ''
 
     for (;;) {
       const { done, value } = await reader.read()
@@ -80,17 +109,22 @@ async function send(text: string, pdfText: string): Promise<void> {
       for (const event of sse.feed(chunk)) {
         if (event.done) continue
         const delta = extractDelta(event.data, provider.value)
-        if (delta) assistant.text += delta
+        if (delta) {
+          buffered += delta
+          // Update reactive + persisted state every chunk; M3 will debounce.
+          await threads.updateMessage(assistant.id!, { text: buffered })
+        }
       }
     }
 
-    assistant.text = assistant.text
-      .replace(/\n*(User|Response)\s*Safety\s*:\s*\w+/gi, '')
-      .trimEnd()
-
-    if (!assistant.text) {
-      assistant.text = 'I received an empty response. Please try again.'
-      assistant.error = true
+    const cleaned = buffered.replace(/\n*(User|Response)\s*Safety\s*:\s*\w+/gi, '').trimEnd()
+    if (!cleaned) {
+      await threads.updateMessage(assistant.id!, {
+        text: 'I received an empty response. Please try again.',
+        error: true,
+      })
+    } else if (cleaned !== buffered) {
+      await threads.updateMessage(assistant.id!, { text: cleaned })
     }
   } catch (err) {
     isTyping.value = false
@@ -100,10 +134,17 @@ async function send(text: string, pdfText: string): Promise<void> {
         ? 'Request timed out. The PDF may be too large or the API is slow.'
         : e.message
     if (!assistant) {
-      messages.value.push({ id: nextId++, role: 'assistant', text: `**Error:** ${errText}`, error: true })
-    } else if (!assistant.text) {
-      assistant.text = `**Error:** ${errText}`
-      assistant.error = true
+      await threads.appendMessage({
+        threadId: thread.id!,
+        role: 'assistant',
+        text: `**Error:** ${errText}`,
+        error: true,
+      })
+    } else {
+      await threads.updateMessage(assistant.id!, {
+        text: `**Error:** ${errText}`,
+        error: true,
+      })
     }
     show(errText, 'error')
   } finally {
@@ -112,11 +153,22 @@ async function send(text: string, pdfText: string): Promise<void> {
   }
 }
 
-function clear(): void {
-  messages.value = []
+async function clear(): Promise<void> {
+  const thread = threads.activeThread.value
+  if (!thread) return
+  await threads.clearMessages(thread.id!)
   show('Chat cleared', 'success')
 }
 
-export function useChat() {
+const messages: ComputedRef<readonly Message[]> = computed(() => threads.activeMessages.value)
+
+export interface UseChatReturn {
+  messages: Ref<readonly Message[]>
+  isTyping: Ref<boolean>
+  send: typeof send
+  clear: typeof clear
+}
+
+export function useChat(): UseChatReturn {
   return { messages, isTyping, send, clear }
 }
