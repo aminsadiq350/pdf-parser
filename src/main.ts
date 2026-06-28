@@ -5,8 +5,10 @@ import { initStore } from '@/lib/db'
 import { useDocuments } from '@/composables/useDocuments'
 import { useThreads } from '@/composables/useThreads'
 import { getRetriever } from '@/lib/retrieval/index'
+import { requestDurableStorage } from '@/lib/durableStorage'
 
 await initStore()
+void requestDurableStorage()
 const docs = useDocuments()
 const threads = useThreads()
 await Promise.all([docs.loadAll(), threads.loadAll()])
