@@ -16,7 +16,7 @@ import { useResponsive } from '@/composables/useResponsive'
 import { buildThreadMarkdown, downloadMarkdown, slugify } from '@/lib/exportThread'
 
 const { messages, isTyping, isStreaming, send, clear, abort } = useChat()
-const { provider, apiKey, model, modelPlaceholder, modelHint } = useSettings()
+const { provider, apiKey, model, modelPlaceholder, modelHint, ocrEnabled } = useSettings()
 const { activeThread, rename: renameThread } = useThreads()
 const { documents } = useDocuments()
 const { show: showToast } = useToasts()
@@ -246,6 +246,23 @@ function onExport() {
             class="w-full p-2.5 text-sm rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none transition"
           />
           <p class="text-[10px] text-zinc-400 mt-1">{{ modelHint }}</p>
+        </div>
+        <div>
+          <label class="flex items-start gap-2 cursor-pointer select-none">
+            <input
+              v-model="ocrEnabled"
+              type="checkbox"
+              class="mt-0.5 rounded border-zinc-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-400"
+            />
+            <span class="flex-1">
+              <span class="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-wider">
+                OCR scanned pages
+              </span>
+              <span class="block text-[10px] text-zinc-400 mt-0.5">
+                First scan downloads a ~10MB model. English only for v1.
+              </span>
+            </span>
+          </label>
         </div>
       </div>
     </div>

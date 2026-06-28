@@ -1,7 +1,7 @@
 import { ref, computed, type ComputedRef, type Ref } from 'vue'
 import { db } from '@/lib/db'
 import type { Document } from '@/types/domain'
-import { readPdf } from '@/lib/pdf'
+import { ingestPdf } from '@/lib/pdfIngest'
 
 const documents = ref<Document[]>([])
 const activeId = ref<number | null>(null)
@@ -14,10 +14,27 @@ async function loadAll(): Promise<void> {
 
 async function importFiles(files: FileList | File[]): Promise<Document[]> {
   const created: Document[] = []
+  // Group G: pick up the OCR setting + toast helper lazily so importFiles
+  // doesn't depend on either at module load.
+  const { useSettings } = await import('./useSettings')
+  const { useToasts } = await import('./useToasts')
+  const { ocrEnabled } = useSettings()
+  const { show } = useToasts()
   for (const file of Array.from(files)) {
     const buffer = await file.arrayBuffer()
     const blob = new Blob([buffer], { type: 'application/pdf' })
-    const { numPages, pages } = await readPdf(buffer)
+    let lastToastAt = 0
+    const { numPages, pages } = await ingestPdf(buffer, {
+      ocr: ocrEnabled.value,
+      onProgress({ page, total }) {
+        // Throttle: at most one toast per 800ms so a 200-page scan doesn't
+        // spam the corner.
+        const now = Date.now()
+        if (now - lastToastAt < 800 && page !== total) return
+        lastToastAt = now
+        show(`OCR ${file.name} — page ${page} / ${total}`, 'info', 1500)
+      },
+    })
     const doc: Document = {
       name: file.name,
       size: file.size,

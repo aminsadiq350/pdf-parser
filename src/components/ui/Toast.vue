@@ -12,11 +12,24 @@ const { toasts } = useToasts()
       :key="t.id"
       :class="[
         'pointer-events-auto px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2',
-        t.type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white',
+        t.type === 'error'
+          ? 'bg-red-600 text-white'
+          : t.type === 'info'
+            ? 'bg-indigo-600 text-white'
+            : 'bg-emerald-600 text-white',
         t.leaving ? 'toast-exit' : 'toast-enter',
       ]"
     >
-      <i :class="['fa-solid', t.type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check']"></i>
+      <i
+        :class="[
+          'fa-solid',
+          t.type === 'error'
+            ? 'fa-circle-xmark'
+            : t.type === 'info'
+              ? 'fa-circle-info'
+              : 'fa-circle-check',
+        ]"
+      ></i>
       {{ t.message }}
     </div>
   </div>

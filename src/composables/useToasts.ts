@@ -4,7 +4,11 @@ import type { Toast } from '@/types/domain'
 const toasts = ref<Toast[]>([])
 
 export function useToasts() {
-  function show(message: string, type: Toast['type'] = 'error') {
+  function show(
+    message: string,
+    type: Toast['type'] = 'error',
+    durationMs = 3500,
+  ) {
     const id = Date.now() + Math.random()
     toasts.value.push({ id, message, type, leaving: false })
     setTimeout(() => {
@@ -13,7 +17,7 @@ export function useToasts() {
       setTimeout(() => {
         toasts.value = toasts.value.filter((x) => x.id !== id)
       }, 300)
-    }, 3500)
+    }, durationMs)
   }
   return { toasts, show }
 }

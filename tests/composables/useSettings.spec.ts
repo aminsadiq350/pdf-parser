@@ -9,6 +9,7 @@ describe('useSettings', () => {
     s.provider.value = 'openrouter'
     s.apiKey.value = ''
     s.model.value = ''
+    s.ocrEnabled.value = true
   })
 
   it('reads existing localStorage values on first load (verified via writeback)', async () => {
@@ -43,5 +44,16 @@ describe('useSettings', () => {
     expect(s.modelHint.value).toMatch(/Gemini API directly/i)
     s.provider.value = 'openrouter'
     expect(s.modelHint.value).toMatch(/openrouter\.ai/i)
+  })
+
+  it('ocrEnabled defaults to true and persists across writes', async () => {
+    const s = useSettings()
+    expect(s.ocrEnabled.value).toBe(true)
+    s.ocrEnabled.value = false
+    await new Promise((r) => setTimeout(r, 0))
+    expect(localStorage.getItem('notebook.ocrEnabled')).toBe('false')
+    s.ocrEnabled.value = true
+    await new Promise((r) => setTimeout(r, 0))
+    expect(localStorage.getItem('notebook.ocrEnabled')).toBe('true')
   })
 })
