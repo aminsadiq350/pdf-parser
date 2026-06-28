@@ -137,7 +137,7 @@ watch(
                 class="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
                 @click="resetZoom(); closeOverflow()"
               >
-                <span class="w-4 text-center">{{ Math.round(scale * 100) }}%</span>Reset zoom
+                <span class="w-9 text-center text-[11px] font-medium">{{ Math.round(scale * 100) }}%</span>Reset zoom
               </button>
               <button
                 class="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"

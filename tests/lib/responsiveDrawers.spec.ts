@@ -4,7 +4,6 @@ import { useDrawers, __resetDrawersForTests } from '@/composables/useDrawers'
 import { __resyncResponsiveForTests } from '@/composables/useResponsive'
 
 declare global {
-  // eslint-disable-next-line no-var
   var __setMatchMedia: (query: string, matches: boolean) => void
 }
 

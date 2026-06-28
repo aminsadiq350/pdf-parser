@@ -53,7 +53,7 @@ const shellClasses = computed(() => {
       ? 'max-sm:translate-x-0 max-sm:translate-y-0'
       : 'max-sm:translate-x-0 max-sm:translate-y-full',
     // Desktop reset.
-    'md:static md:z-auto md:translate-x-0 md:w-96 md:max-w-none md:h-auto md:rounded-none md:shadow-none md:border-l md:transition-none',
+    'md:static md:z-auto md:translate-x-0 md:w-96 md:max-w-none md:rounded-none md:shadow-none md:border-l md:transition-none',
   ]
   return base
 })

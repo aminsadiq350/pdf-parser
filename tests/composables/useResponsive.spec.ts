@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { useResponsive, __resyncResponsiveForTests } from '@/composables/useResponsive'
 
 declare global {
-  // eslint-disable-next-line no-var
   var __setMatchMedia: (query: string, matches: boolean) => void
 }
 

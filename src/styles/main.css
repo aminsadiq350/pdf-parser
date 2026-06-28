@@ -5,6 +5,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* #app needs an explicit height so descendants using h-full collapse to the
+   viewport rather than auto-sizing to their content. */
+#app { height: 100%; }
+
 [v-cloak] { display: none; }
 .katex-display { overflow-x: auto; overflow-y: hidden; }
 

@@ -7,6 +7,7 @@ import { renderCitationsHtml } from '@/lib/citations'
 import { useDocuments } from '@/composables/useDocuments'
 import { usePdfViewer } from '@/composables/usePdfViewer'
 import { useCitationPreview } from '@/composables/useCitationPreview'
+import { useResponsive } from '@/composables/useResponsive'
 import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 
 const props = defineProps<{ msg: Msg }>()
@@ -15,6 +16,7 @@ const root = ref<HTMLElement | null>(null)
 const { documents } = useDocuments()
 const { jumpToPage } = usePdfViewer()
 const preview = useCitationPreview()
+const { isMobile } = useResponsive()
 
 // For assistants: rewrite citation tokens to <button> chips BEFORE markdown.
 // For users: skip — they don't emit citations.
@@ -45,6 +47,9 @@ function onClick(e: MouseEvent) {
 }
 
 function onHover(e: MouseEvent) {
+  // Touch devices emit hover-on-first-tap which would then sit on top of
+  // the chip and block the actual click. Skip the preview on mobile.
+  if (isMobile.value) return
   const btn = (e.target as HTMLElement).closest(
     'button.citation-chip',
   ) as HTMLButtonElement | null
