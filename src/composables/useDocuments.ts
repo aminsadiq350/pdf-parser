@@ -2,6 +2,9 @@ import { ref, computed, type ComputedRef, type Ref } from 'vue'
 import { db } from '@/lib/db'
 import type { Document } from '@/types/domain'
 import { ingestPdf } from '@/lib/pdfIngest'
+import { useSettings } from './useSettings'
+import { useToasts } from './useToasts'
+import { getRetriever } from '@/lib/retrieval/index'
 
 const documents = ref<Document[]>([])
 const activeId = ref<number | null>(null)
@@ -14,10 +17,6 @@ async function loadAll(): Promise<void> {
 
 async function importFiles(files: FileList | File[]): Promise<Document[]> {
 	const created: Document[] = []
-	// Group G: pick up the OCR setting + toast helper lazily so importFiles
-	// doesn't depend on either at module load.
-	const { useSettings } = await import('./useSettings')
-	const { useToasts } = await import('./useToasts')
 	const { ocrEnabled } = useSettings()
 	const { show } = useToasts()
 	for (const file of Array.from(files)) {
@@ -48,9 +47,7 @@ async function importFiles(files: FileList | File[]): Promise<Document[]> {
 		documents.value = [persisted, ...documents.value]
 		created.push(persisted)
 		if (activeId.value == null) activeId.value = id
-		// Index for BM25 retrieval (M3). Dynamic import keeps callers that never
-		// chat (e.g. plain delete flows) off the retrieval module.
-		const { getRetriever } = await import('@/lib/retrieval/index')
+		// Index for BM25 retrieval.
 		await getRetriever().indexDocument({ id, name: doc.name, pages: doc.pages })
 	}
 	return created
@@ -67,9 +64,7 @@ async function deleteDoc(id: number): Promise<void> {
 	})
 	documents.value = documents.value.filter((d) => d.id !== id)
 	if (activeId.value === id) activeId.value = null
-	// Drop from retrieval index. Thread-side cascade is owned by useThreads
-	// (see Task 7 of the M2 plan).
-	const { getRetriever } = await import('@/lib/retrieval/index')
+	// Drop from retrieval index.
 	await getRetriever().removeDocument(id)
 	// Drop from citation-preview cache (Group C).
 	const { invalidatePreviewCache } = await import('@/lib/pdfPreview')
@@ -89,7 +84,6 @@ async function rename(id: number, name: string): Promise<void> {
 	// Re-index so BM25 retriever's stored docName stays in sync.
 	const doc = documents.value.find((d) => d.id === id)
 	if (doc) {
-		const { getRetriever } = await import('@/lib/retrieval/index')
 		await getRetriever().indexDocument({ id, name: trimmed, pages: doc.pages })
 	}
 }

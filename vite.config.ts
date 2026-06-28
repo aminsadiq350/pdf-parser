@@ -97,6 +97,12 @@ export default defineConfig({
 		//   • pdf.worker.min (1.08MB) — copied as a worker asset, not loaded on main thread
 		chunkSizeWarningLimit: 1100,
 		rollupOptions: {
+			onwarn(warning, warn) {
+				// pdfjs-dist@3 uses eval internally for worker bootstrapping — nothing we
+				// can do until we upgrade to pdfjs@5+.  Suppress to keep build output clean.
+				if (warning.code === 'EVAL' && warning.id?.includes('pdfjs-dist')) return
+				warn(warning)
+			},
 			output: {
 				// Split heavy vendor libs out of index.js so each chunk stays under 500KB.
 				manualChunks: {

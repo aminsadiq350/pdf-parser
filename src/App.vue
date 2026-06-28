@@ -4,7 +4,6 @@ import AppSidebar from './components/AppSidebar.vue'
 import PdfViewer from './components/PdfViewer.vue'
 import ChatPanel from './components/ChatPanel.vue'
 import Toast from './components/ui/Toast.vue'
-import CitationPreview from './components/chat/CitationPreview.vue'
 import MobileChromeBar from './components/mobile/MobileChromeBar.vue'
 import DrawerBackdrop from './components/mobile/DrawerBackdrop.vue'
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
@@ -50,6 +49,5 @@ useKeyboardShortcuts({
     </div>
     <DrawerBackdrop />
     <Toast />
-    <CitationPreview />
   </div>
 </template>
