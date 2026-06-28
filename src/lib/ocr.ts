@@ -12,14 +12,14 @@ const RENDER_SCALE = 2.0
  * `''` or a handful of stray glyphs from page numbers / watermarks.
  */
 export function needsOcr(text: string): boolean {
-  if (!text) return true
-  const nonWs = text.replace(/\s+/g, '').length
-  return nonWs < MIN_TEXT_CHARS
+	if (!text) return true
+	const nonWs = text.replace(/\s+/g, '').length
+	return nonWs < MIN_TEXT_CHARS
 }
 
 export interface OcrProgress {
-  page: number
-  total: number
+	page: number
+	total: number
 }
 export type OcrProgressFn = (p: OcrProgress) => void
 
@@ -27,8 +27,8 @@ export type OcrProgressFn = (p: OcrProgress) => void
 export type OcrEngine = (pageNumber: number) => Promise<string>
 
 export interface OcrRunOptions {
-  onProgress?: OcrProgressFn
-  signal?: AbortSignal
+	onProgress?: OcrProgressFn
+	signal?: AbortSignal
 }
 
 /**
@@ -37,49 +37,49 @@ export interface OcrRunOptions {
  * the OCR'd text substituted in. Existing text is never overwritten.
  */
 export async function runOcrPass(
-  pages: PageText[],
-  engine: OcrEngine,
-  opts?: OcrRunOptions,
+	pages: PageText[],
+	engine: OcrEngine,
+	opts?: OcrRunOptions,
 ): Promise<PageText[]> {
-  const next: PageText[] = pages.map((p) => ({ ...p }))
-  let ocrIndex = 0
-  const total = pages.filter((p) => needsOcr(p.text)).length
-  for (const p of next) {
-    if (opts?.signal?.aborted) break
-    if (!needsOcr(p.text)) continue
-    ocrIndex += 1
-    const recognised = (await engine(p.pageNumber)).trim()
-    if (recognised) p.text = recognised
-    opts?.onProgress?.({ page: ocrIndex, total })
-  }
-  return next
+	const next: PageText[] = pages.map((p) => ({ ...p }))
+	let ocrIndex = 0
+	const total = pages.filter((p) => needsOcr(p.text)).length
+	for (const p of next) {
+		if (opts?.signal?.aborted) break
+		if (!needsOcr(p.text)) continue
+		ocrIndex += 1
+		const recognised = (await engine(p.pageNumber)).trim()
+		if (recognised) p.text = recognised
+		opts?.onProgress?.({ page: ocrIndex, total })
+	}
+	return next
 }
 
 let workerPromise: Promise<unknown> | null = null
 async function getWorker(): Promise<{
-  recognize: (image: HTMLCanvasElement) => Promise<{ data: { text: string } }>
-  terminate: () => Promise<unknown>
+	recognize: (image: HTMLCanvasElement) => Promise<{ data: { text: string } }>
+	terminate: () => Promise<unknown>
 }> {
-  if (!workerPromise) {
-    workerPromise = (async () => {
-      const Tesseract = await import('tesseract.js')
-      return Tesseract.createWorker('eng')
-    })()
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return workerPromise as any
+	if (!workerPromise) {
+		workerPromise = (async () => {
+			const Tesseract = await import('tesseract.js')
+			return Tesseract.createWorker('eng')
+		})()
+	}
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return workerPromise as any
 }
 
 /** Drops the cached worker. Called after each ingest run to free RAM. */
 async function disposeWorker(): Promise<void> {
-  if (!workerPromise) return
-  try {
-    const w = await workerPromise
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (w as any).terminate?.()
-  } finally {
-    workerPromise = null
-  }
+	if (!workerPromise) return
+	try {
+		const w = await workerPromise
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		await (w as any).terminate?.()
+	} finally {
+		workerPromise = null
+	}
 }
 
 /**
@@ -88,19 +88,19 @@ async function disposeWorker(): Promise<void> {
  * lazy-loaded worker.
  */
 function tesseractEngine(pdf: pdfjsLib.PDFDocumentProxy): OcrEngine {
-  return async (pageNumber: number) => {
-    const page = await pdf.getPage(pageNumber)
-    const viewport = page.getViewport({ scale: RENDER_SCALE })
-    const canvas = document.createElement('canvas')
-    canvas.width = viewport.width
-    canvas.height = viewport.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return ''
-    await page.render({ canvasContext: ctx, viewport }).promise
-    const worker = await getWorker()
-    const result = await worker.recognize(canvas)
-    return result.data.text ?? ''
-  }
+	return async (pageNumber: number) => {
+		const page = await pdf.getPage(pageNumber)
+		const viewport = page.getViewport({ scale: RENDER_SCALE })
+		const canvas = document.createElement('canvas')
+		canvas.width = viewport.width
+		canvas.height = viewport.height
+		const ctx = canvas.getContext('2d')
+		if (!ctx) return ''
+		await page.render({ canvasContext: ctx, viewport }).promise
+		const worker = await getWorker()
+		const result = await worker.recognize(canvas)
+		return result.data.text ?? ''
+	}
 }
 
 /**
@@ -109,19 +109,19 @@ function tesseractEngine(pdf: pdfjsLib.PDFDocumentProxy): OcrEngine {
  * on completion so we don't keep ~30MB resident.
  */
 export async function ocrPagesIfNeeded(
-  pdf: pdfjsLib.PDFDocumentProxy,
-  pages: PageText[],
-  opts?: OcrRunOptions,
+	pdf: pdfjsLib.PDFDocumentProxy,
+	pages: PageText[],
+	opts?: OcrRunOptions,
 ): Promise<PageText[]> {
-  if (!pages.some((p) => needsOcr(p.text))) return pages
-  try {
-    return await runOcrPass(pages, tesseractEngine(pdf), opts)
-  } finally {
-    await disposeWorker()
-  }
+	if (!pages.some((p) => needsOcr(p.text))) return pages
+	try {
+		return await runOcrPass(pages, tesseractEngine(pdf), opts)
+	} finally {
+		await disposeWorker()
+	}
 }
 
 /** Test-only: clears the cached worker so each spec starts clean. */
 export function __resetOcrWorkerForTests(): void {
-  workerPromise = null
+	workerPromise = null
 }

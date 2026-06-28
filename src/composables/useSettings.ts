@@ -9,9 +9,9 @@ const model = ref<string>(localStorage.getItem('model') ?? '')
 // will trigger a ~10MB Tesseract model download (cached by Tesseract itself).
 const STORAGE_OCR = 'notebook.ocrEnabled'
 function readOcrEnabled(): boolean {
-  const raw = localStorage.getItem(STORAGE_OCR)
-  if (raw == null) return true
-  return raw === 'true'
+	const raw = localStorage.getItem(STORAGE_OCR)
+	if (raw == null) return true
+	return raw === 'true'
 }
 const ocrEnabled = ref<boolean>(readOcrEnabled())
 
@@ -21,13 +21,13 @@ watch(model, (v) => localStorage.setItem('model', v))
 watch(ocrEnabled, (v) => localStorage.setItem(STORAGE_OCR, String(v)))
 
 const modelPlaceholder = computed(() =>
-  provider.value === 'gemini' ? 'e.g. gemini-2.5-flash' : 'e.g. google/gemini-2.5-flash',
+	provider.value === 'gemini' ? 'e.g. gemini-2.5-flash' : 'e.g. google/gemini-2.5-flash',
 )
 
 const modelHint = computed(() =>
-  provider.value === 'gemini' ? 'Uses Gemini API directly' : 'Any model from openrouter.ai/models',
+	provider.value === 'gemini' ? 'Uses Gemini API directly' : 'Any model from openrouter.ai/models',
 )
 
 export function useSettings() {
-  return { provider, apiKey, model, modelPlaceholder, modelHint, ocrEnabled }
+	return { provider, apiKey, model, modelPlaceholder, modelHint, ocrEnabled }
 }

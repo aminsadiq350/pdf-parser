@@ -5,16 +5,16 @@ type EncodeFn = (text: string) => number[]
 let cached: EncodeFn | null = null
 
 async function getEncode(): Promise<EncodeFn> {
-  if (!cached) {
-    const mod = await import('gpt-tokenizer/encoding/cl100k_base')
-    cached = mod.encode
-  }
-  return cached
+	if (!cached) {
+		const mod = await import('gpt-tokenizer/encoding/cl100k_base')
+		cached = mod.encode
+	}
+	return cached
 }
 
 /** Returns the cl100k_base token count of the given text. */
 export async function estimateTokens(text: string): Promise<number> {
-  if (!text) return 0
-  const encode = await getEncode()
-  return encode(text).length
+	if (!text) return 0
+	const encode = await getEncode()
+	return encode(text).length
 }

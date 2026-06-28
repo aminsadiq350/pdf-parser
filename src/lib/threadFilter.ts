@@ -8,22 +8,22 @@ import type { Document, Thread } from '@/types/domain'
  * - Matching is case-insensitive substring (no fuzzy yet).
  */
 export function filterThreads(
-  threads: readonly Thread[],
-  query: string,
-  docs: readonly Document[],
+	threads: readonly Thread[],
+	query: string,
+	docs: readonly Document[],
 ): Thread[] {
-  const q = query.trim().toLowerCase()
-  if (!q) return [...threads]
-  const docNameById = new Map<number, string>()
-  for (const d of docs) {
-    if (d.id != null) docNameById.set(d.id, d.name.toLowerCase())
-  }
-  return threads.filter((t) => {
-    if (t.name && t.name.toLowerCase().includes(q)) return true
-    for (const id of t.docIds) {
-      const n = docNameById.get(id)
-      if (n && n.includes(q)) return true
-    }
-    return false
-  })
+	const q = query.trim().toLowerCase()
+	if (!q) return [...threads]
+	const docNameById = new Map<number, string>()
+	for (const d of docs) {
+		if (d.id != null) docNameById.set(d.id, d.name.toLowerCase())
+	}
+	return threads.filter((t) => {
+		if (t.name && t.name.toLowerCase().includes(q)) return true
+		for (const id of t.docIds) {
+			const n = docNameById.get(id)
+			if (n && n.includes(q)) return true
+		}
+		return false
+	})
 }

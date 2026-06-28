@@ -8,8 +8,8 @@ import { useResponsive } from '@/composables/useResponsive'
  * just dismissed an overlay).
  */
 export function closeDrawersIfMobile(): void {
-  const { isMobile } = useResponsive()
-  if (!isMobile.value) return
-  const drawers = useDrawers()
-  drawers.closeAll()
+	const { isMobile } = useResponsive()
+	if (!isMobile.value) return
+	const drawers = useDrawers()
+	drawers.closeAll()
 }

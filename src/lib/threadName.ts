@@ -14,19 +14,19 @@ const MAX_LEN = 50
  *  - If the candidate is <= MAX_LEN it's returned as-is, no ellipsis.
  */
 export function suggestThreadName(text: string): string {
-  if (!text) return ''
-  const normalised = text.replace(/\s+/g, ' ').trim()
-  if (!normalised) return ''
+	if (!text) return ''
+	const normalised = text.replace(/\s+/g, ' ').trim()
+	if (!normalised) return ''
 
-  // First sentence boundary.
-  const match = normalised.match(/^([^.!?]+)[.!?]/)
-  const candidate = match ? match[1].trim() : normalised
+	// First sentence boundary.
+	const match = normalised.match(/^([^.!?]+)[.!?]/)
+	const candidate = match ? match[1].trim() : normalised
 
-  if (candidate.length <= MAX_LEN) return candidate
+	if (candidate.length <= MAX_LEN) return candidate
 
-  // Hard cut at a word boundary <= MAX_LEN.
-  const slice = candidate.slice(0, MAX_LEN)
-  const lastSpace = slice.lastIndexOf(' ')
-  const cut = lastSpace > 0 ? slice.slice(0, lastSpace) : slice
-  return `${cut}…`
+	// Hard cut at a word boundary <= MAX_LEN.
+	const slice = candidate.slice(0, MAX_LEN)
+	const lastSpace = slice.lastIndexOf(' ')
+	const cut = lastSpace > 0 ? slice.slice(0, lastSpace) : slice
+	return `${cut}…`
 }
