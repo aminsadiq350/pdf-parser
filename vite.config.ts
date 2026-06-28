@@ -89,7 +89,25 @@ export default defineConfig({
 		},
 	},
 	server: { port: 5173, open: false },
-	build: { sourcemap: true, target: 'es2022' },
+	build: {
+		sourcemap: true,
+		target: 'es2022',
+		// Raise the warning limit to cover:
+		//   • cl100k_base (974KB) — lazy-loaded tokenizer vocab, doesn't affect initial bundle
+		//   • pdf.worker.min (1.08MB) — copied as a worker asset, not loaded on main thread
+		chunkSizeWarningLimit: 1100,
+		rollupOptions: {
+			output: {
+				// Split heavy vendor libs out of index.js so each chunk stays under 500KB.
+				manualChunks: {
+					'vendor-katex': ['katex'],
+					'vendor-db': ['dexie'],
+					'vendor-md': ['marked', 'dompurify'],
+					'vendor-search': ['minisearch'],
+				},
+			},
+		},
+	},
 	test: {
 		globals: true,
 		environment: 'jsdom',

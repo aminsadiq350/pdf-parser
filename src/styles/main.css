@@ -141,15 +141,18 @@
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
 }
-.md-table-scroll > table {
+
+.md-table-scroll>table {
 	width: max-content;
 	max-width: none;
 	border-collapse: collapse;
 }
+
 .prose pre {
 	max-width: 100%;
 	overflow-x: auto;
 }
+
 .prose code {
 	overflow-wrap: anywhere;
 	word-break: break-word;
