@@ -31,6 +31,10 @@ async function importFiles(files: FileList | File[]): Promise<Document[]> {
     documents.value = [persisted, ...documents.value]
     created.push(persisted)
     if (activeId.value == null) activeId.value = id
+    // Index for BM25 retrieval (M3). Dynamic import keeps callers that never
+    // chat (e.g. plain delete flows) off the retrieval module.
+    const { getRetriever } = await import('@/lib/retrieval/index')
+    await getRetriever().indexDocument({ id, name: doc.name, pages: doc.pages })
   }
   return created
 }
@@ -46,8 +50,10 @@ async function deleteDoc(id: number): Promise<void> {
   })
   documents.value = documents.value.filter((d) => d.id !== id)
   if (activeId.value === id) activeId.value = null
-  // Thread-side cascade is owned by useThreads (see Task 7). The sidebar
-  // call site chains useThreads.handleDocDeleted(id) after delete().
+  // Drop from retrieval index. Thread-side cascade is owned by useThreads
+  // (see Task 7 of the M2 plan).
+  const { getRetriever } = await import('@/lib/retrieval/index')
+  await getRetriever().removeDocument(id)
 }
 
 async function getBlob(id: number): Promise<Blob | null> {
