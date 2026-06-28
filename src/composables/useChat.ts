@@ -8,6 +8,7 @@ import { SseReader, extractDelta } from '@/lib/llm/streamParser'
 import { getRetriever } from '@/lib/retrieval/index'
 import { parseCitations } from '@/lib/citations'
 import { estimateTokens } from '@/lib/tokenizer'
+import { suggestThreadName } from '@/lib/threadName'
 import { useSettings } from './useSettings'
 import { useToasts } from './useToasts'
 import { useThreads } from './useThreads'
@@ -103,6 +104,16 @@ async function send(text: string): Promise<void> {
   }
 
   await threads.appendMessage({ threadId: thread.id!, role: 'user', text: trimmed })
+
+  // Group E: auto-name a still-nameless thread from the user's first usable
+  // message. Skips renames if the thread already has a name (manual or
+  // previously auto-set).
+  if (!thread.name || thread.name.trim() === '') {
+    const suggested = suggestThreadName(trimmed)
+    if (suggested) {
+      await threads.rename(thread.id!, suggested)
+    }
+  }
 
   if (!apiKey.value) {
     show('Please add an API key to get AI responses', 'error')

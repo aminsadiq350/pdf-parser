@@ -261,4 +261,46 @@ describe('useChat (Dexie + retrieval)', () => {
     await useChat().clear()
     expect(await db.messages.count()).toBe(0)
   })
+
+  it('auto-names a nameless thread from the first user message', async () => {
+    const t = useThreads()
+    const thread = await t.create({ docIds: [] })
+    expect(thread.name).toBe('')
+    await t.select(thread.id!)
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(makeSseStream(['data: [DONE]\n\n']), { status: 200 }),
+      ),
+    )
+
+    await useChat().send('What is on page 1? Just the first line please.')
+
+    const updated = await db.threads.get(thread.id!)
+    expect(updated?.name).toBe('What is on page 1')
+    expect(t.threads.value.find((x) => x.id === thread.id)?.name).toBe(
+      'What is on page 1',
+    )
+  })
+
+  it('does not auto-name a thread that already has a name', async () => {
+    const t = useThreads()
+    const thread = await t.create({ docIds: [], name: 'My research' })
+    await t.select(thread.id!)
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(makeSseStream(['data: [DONE]\n\n']), { status: 200 }),
+      ),
+    )
+
+    await useChat().send('A completely different question entirely.')
+
+    const updated = await db.threads.get(thread.id!)
+    expect(updated?.name).toBe('My research')
+  })
 })
