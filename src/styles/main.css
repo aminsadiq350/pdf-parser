@@ -133,6 +133,28 @@
 	background: rgba(255, 255, 255, 0.15);
 }
 
+/* Wide content (tables, pre/code) inside an assistant bubble must scroll
+   horizontally within the bubble — otherwise the whole chat panel grows a
+   horizontal scrollbar when the model emits a markdown table. */
+.md-table-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+.md-table-scroll > table {
+	width: max-content;
+	max-width: none;
+	border-collapse: collapse;
+}
+.prose pre {
+	max-width: 100%;
+	overflow-x: auto;
+}
+.prose code {
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
 #chat-container::-webkit-scrollbar {
 	width: 4px;
 }
