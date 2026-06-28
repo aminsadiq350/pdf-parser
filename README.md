@@ -47,6 +47,20 @@ npx serve dist -p 5050 --single
 The built `dist/` includes a service worker (`sw.js`), Web App Manifest
 (`manifest.webmanifest`), and the precached app shell.
 
+### Laravel Valet
+
+The project root ships a [LocalValetDriver.php](LocalValetDriver.php) that
+serves `dist/` as a SPA: static assets resolve under `dist/*`, every other
+path falls back to `dist/index.html`. After `valet park`/`link`, this works:
+
+```bash
+npm run build
+open https://pdf-parser.test
+```
+
+If you want HMR, run `npm run dev` and either hit `http://localhost:5173`
+directly or `valet proxy pdf-parser http://localhost:5173 --secure`.
+
 ## Scripts
 
 | Script | What it does |
