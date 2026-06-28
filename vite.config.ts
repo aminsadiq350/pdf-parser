@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
+import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
@@ -13,6 +14,73 @@ export default defineConfig({
           dest: 'standard-fonts',
         },
       ],
+    }),
+    // Group H: PWA + offline shell. Workbox precaches the app shell and
+    // PDF.js worker; runtime-caches PDF.js standard fonts and Tesseract
+    // CDN assets.
+    VitePWA({
+      registerType: 'prompt',
+      injectRegister: false,
+      includeAssets: [
+        'icons/favicon.svg',
+        'icons/icon-192.png',
+        'icons/icon-512.png',
+        'icons/icon-512-maskable.png',
+      ],
+      manifest: {
+        name: 'Notebook',
+        short_name: 'Notebook',
+        description: 'Read PDFs, chat with their contents, fully on-device.',
+        theme_color: '#4f46e5',
+        background_color: '#ffffff',
+        display: 'standalone',
+        scope: '/',
+        start_url: '/',
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: '/icons/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,woff2,ttf,json,svg,png}'],
+        // PDF.js worker is ~1.1MB; the default 2MiB precache ceiling
+        // would skip it.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // Skip the heavy lazy chunks from the precache — they're loaded
+        // on demand and runtime-cached on first network use.
+        globIgnores: ['**/cl100k_base-*.js', '**/index-*.js.map'],
+        runtimeCaching: [
+          {
+            // PDF.js standard fonts served from public/standard-fonts/
+            urlPattern: /\/standard-fonts\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'pdfjs-standard-fonts',
+              expiration: { maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            // Tesseract.js fetches its core + traineddata from unpkg.
+            urlPattern:
+              /^https:\/\/(?:unpkg\.com|cdn\.jsdelivr\.net)\/.*tesseract/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tesseract-cdn',
+              expiration: { maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        enabled: false,
+      },
     }),
   ],
   resolve: {
