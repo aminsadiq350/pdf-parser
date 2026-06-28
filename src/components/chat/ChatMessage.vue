@@ -6,12 +6,14 @@ import { renderMath } from '@/lib/katex'
 import { renderCitationsHtml } from '@/lib/citations'
 import { useDocuments } from '@/composables/useDocuments'
 import { usePdfViewer } from '@/composables/usePdfViewer'
+import { useCitationPreview } from '@/composables/useCitationPreview'
 
 const props = defineProps<{ msg: Msg }>()
 const root = ref<HTMLElement | null>(null)
 
 const { documents } = useDocuments()
 const { jumpToPage } = usePdfViewer()
+const preview = useCitationPreview()
 
 // For assistants: rewrite citation tokens to <button> chips BEFORE markdown.
 // For users: skip — they don't emit citations.
@@ -37,6 +39,25 @@ function onClick(e: MouseEvent) {
     void jumpToPage(docId, pageNumber)
   }
 }
+
+function onHover(e: MouseEvent) {
+  const btn = (e.target as HTMLElement).closest(
+    'button.citation-chip',
+  ) as HTMLButtonElement | null
+  if (!btn || btn.classList.contains('stale')) return
+  const docId = Number.parseInt(btn.getAttribute('data-doc-id') ?? '', 10)
+  const pageNumber = Number.parseInt(btn.getAttribute('data-page') ?? '', 10)
+  if (!Number.isFinite(docId) || !Number.isFinite(pageNumber)) return
+  const rect = btn.getBoundingClientRect()
+  preview.show(rect.right + 8, rect.top - 8, docId, pageNumber)
+}
+
+function onUnhover(e: MouseEvent) {
+  const target = e.relatedTarget as HTMLElement | null
+  const next = target?.closest?.('button.citation-chip')
+  if (next) return
+  preview.scheduleHide()
+}
 </script>
 
 <template>
@@ -60,7 +81,13 @@ function onClick(e: MouseEvent) {
           class="px-4 py-2.5 rounded-2xl rounded-bl-md bg-zinc-100 dark:bg-zinc-800 text-sm prose dark:prose-invert prose-sm max-w-none"
         >
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div ref="root" v-html="rendered" @click="onClick"></div>
+          <div
+            ref="root"
+            v-html="rendered"
+            @click="onClick"
+            @mouseover="onHover"
+            @mouseout="onUnhover"
+          ></div>
         </div>
         <div v-if="props.msg.error" class="flex items-center gap-1 mt-1 ml-1">
           <i class="fa-solid fa-circle-exclamation text-[10px] text-red-400"></i>
