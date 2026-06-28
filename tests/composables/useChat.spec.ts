@@ -122,7 +122,7 @@ describe('useChat (Dexie + retrieval)', () => {
 		expect(sys).toMatch(/Attached documents:/)
 		expect(sys).toMatch(/\[A\] A\.pdf/)
 		expect(sys).toMatch(/\[B\] B\.pdf/)
-		expect(sys).toMatch(/cite using the format \[A:p3\]/i)
+		expect(sys).toMatch(/cite the exact page using this notation: \[A:p3\]/i)
 		expect(sys).toContain('alpha alpha alpha')
 		expect(sys).toContain('beta beta beta')
 	})

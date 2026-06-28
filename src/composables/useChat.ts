@@ -87,8 +87,8 @@ async function buildContextSection(
 			.map((d) => `  [${docIdToAlias.get(d.id!)}] ${d.name} (${d.numPages} pages)`)
 			.join('\n')
 	const instr =
-		'When you reference these documents, cite using the format [A:p3] or [B:p1]. ' +
-		'Cite the specific page that supports your statement. Do not invent pages.'
+		'When you reference these documents, cite the exact page using this notation: [A:p3] or [B:p12]. ' +
+		'Rules: one bracket token per page, the letter is the alias, p immediately precedes the number (no space, no word "page"), no ranges. Do not invent page numbers.'
 	const body = chunks.map((c) => `[${c.alias}] [Page ${c.pageNumber}]\n${c.text}`).join('\n\n')
 	return { section: `${legend}\n\n${instr}\n\n${body}`, aliasToDocId }
 }

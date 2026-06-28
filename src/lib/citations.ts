@@ -1,6 +1,7 @@
 import type { Citation, Document } from '@/types/domain'
 
-const TOKEN_RE = /\[([A-Z]{1,2}):p(\d+)\]/g
+// Matches [A:p3], [A:page 3], [A:page 12–13] — captures alias and first page number.
+const TOKEN_RE = /\[([A-Z]{1,2}):p(?:age\s+)?(\d+)[^\]]*\]/g
 
 function escapeHtml(s: string): string {
 	return s
