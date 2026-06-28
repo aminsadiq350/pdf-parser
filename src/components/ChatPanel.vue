@@ -3,20 +3,40 @@ import { computed, nextTick, ref, watch } from 'vue'
 import ChatMessage from './chat/ChatMessage.vue'
 import ChatInput from './chat/ChatInput.vue'
 import TypingIndicator from './chat/TypingIndicator.vue'
+import AttachedDocsBar from './chat/AttachedDocsBar.vue'
 import { useChat } from '@/composables/useChat'
 import { useSettings } from '@/composables/useSettings'
+import { useThreads } from '@/composables/useThreads'
 import { useDocuments } from '@/composables/useDocuments'
-import { extractTextByPage } from '@/lib/pdf'
 
 const { messages, isTyping, send, clear } = useChat()
 const { provider, apiKey, model, modelPlaceholder, modelHint } = useSettings()
-const { activeDoc } = useDocuments()
+const { activeThread } = useThreads()
+const { documents } = useDocuments()
 
 const showSettings = ref(false)
 const showApiKey = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
-
 const isReady = computed(() => !!apiKey.value)
+
+const headerLabel = computed(() => {
+  const t = activeThread.value
+  if (!t) return 'Chat'
+  if (t.name) return t.name
+  const first = t.docIds[0] != null ? documents.value.find((d) => d.id === t.docIds[0]) : null
+  return first?.name ?? 'Untitled chat'
+})
+
+const emptyStateNudge = computed(() => {
+  const t = activeThread.value
+  if (!t) return 'Import a PDF or pick a thread to begin'
+  const names = t.docIds
+    .map((id) => documents.value.find((d) => d.id === id)?.name)
+    .filter((x): x is string => !!x)
+  if (names.length === 0) return 'No documents attached. Add one with the + button above.'
+  if (names.length === 1) return `Ask anything about ${names[0]}`
+  return `Ask anything about ${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
+})
 
 function scrollToBottom() {
   void nextTick(() => {
@@ -24,16 +44,10 @@ function scrollToBottom() {
     if (el) el.scrollTop = el.scrollHeight
   })
 }
-
 watch([messages, isTyping], scrollToBottom, { deep: true })
 
 async function onSend(text: string) {
-  const pdfText = activeDoc.value
-    ? (await extractTextByPage(activeDoc.value.data))
-        .map((p) => `[Page ${p.pageNumber}]\n${p.text}`)
-        .join('\n\n')
-    : ''
-  await send(text, pdfText)
+  await send(text)
 }
 </script>
 
@@ -41,27 +55,26 @@ async function onSend(text: string) {
   <section
     class="w-96 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 flex flex-col"
   >
-    <!-- Header -->
     <div
       class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900"
     >
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-comments text-indigo-500"></i>
-        <span class="font-semibold text-sm">Chat</span>
+      <div class="flex items-center gap-2 min-w-0">
+        <i class="fa-solid fa-comments text-indigo-500 flex-shrink-0"></i>
+        <span class="font-semibold text-sm truncate">{{ headerLabel }}</span>
         <span
           v-if="isReady"
-          class="flex items-center gap-1 text-[10px] text-emerald-500 font-medium ml-1"
+          class="flex items-center gap-1 text-[10px] text-emerald-500 font-medium ml-1 flex-shrink-0"
         >
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot inline-block"></span>Ready
         </span>
         <span
           v-else
-          class="flex items-center gap-1 text-[10px] text-zinc-400 font-medium ml-1"
+          class="flex items-center gap-1 text-[10px] text-zinc-400 font-medium ml-1 flex-shrink-0"
         >
           <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 inline-block"></span>No key
         </span>
       </div>
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-1 flex-shrink-0">
         <button
           class="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
           title="Clear chat"
@@ -84,7 +97,6 @@ async function onSend(text: string) {
       </div>
     </div>
 
-    <!-- Settings drawer -->
     <div
       :class="[
         'settings-panel px-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50',
@@ -157,7 +169,8 @@ async function onSend(text: string) {
       </div>
     </div>
 
-    <!-- Messages -->
+    <AttachedDocsBar />
+
     <div
       id="chat-container"
       ref="chatContainer"
@@ -173,13 +186,12 @@ async function onSend(text: string) {
           <i class="fa-solid fa-robot text-indigo-500 text-xl"></i>
         </div>
         <p class="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">Ask me anything</p>
-        <p class="text-xs text-zinc-400">Import a PDF and ask questions about its content</p>
+        <p class="text-xs text-zinc-400">{{ emptyStateNudge }}</p>
       </div>
       <ChatMessage v-for="m in messages" :key="m.id" :msg="m" />
       <TypingIndicator v-if="isTyping" />
     </div>
 
-    <!-- Input -->
     <ChatInput :disabled="isTyping" @send="onSend">
       <template #hint>
         <p
