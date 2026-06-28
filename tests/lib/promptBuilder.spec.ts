@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { buildPayload, NOTEBOOK_IDENTITY } from '@/lib/llm/promptBuilder'
-import type { ChatMessage } from '@/types/domain'
+import type { Message } from '@/types/domain'
 
-const history: ChatMessage[] = [
-  { id: 1, role: 'user', text: 'Hi' },
-  { id: 2, role: 'assistant', text: 'Hello' },
+const history: Message[] = [
+  { id: 1, threadId: 1, role: 'user', text: 'Hi', createdAt: 1 },
+  { id: 2, threadId: 1, role: 'assistant', text: 'Hello', createdAt: 2 },
 ]
 
 describe('buildPayload (openrouter)', () => {

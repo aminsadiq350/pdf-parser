@@ -1,9 +1,9 @@
-import type { ChatMessage, Provider } from '@/types/domain'
+import type { Message, Provider } from '@/types/domain'
 
 export interface BuildPayloadInput {
   provider: Provider
   model: string
-  history: ChatMessage[]
+  history: Message[]
   pdfText: string // empty string = no doc
 }
 

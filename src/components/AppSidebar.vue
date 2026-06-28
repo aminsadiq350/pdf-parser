@@ -2,9 +2,11 @@
 import { ref } from 'vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useDocuments } from '@/composables/useDocuments'
+import DocList from './sidebar/DocList.vue'
+import ThreadList from './sidebar/ThreadList.vue'
 
 const { isDark, toggle } = useDarkMode()
-const { documents, activeId, importFiles, select } = useDocuments()
+const { importFiles } = useDocuments()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
@@ -17,9 +19,11 @@ async function onPick(e: Event) {
 
 <template>
   <aside
-    class="w-72 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col p-4 space-y-4"
+    class="w-72 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col"
   >
-    <div class="flex items-center justify-between">
+    <div
+      class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between"
+    >
       <h1 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">Notebook</h1>
       <button
         class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
@@ -29,35 +33,26 @@ async function onPick(e: Event) {
       </button>
     </div>
 
-    <button
-      class="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-      @click="fileInputRef?.click()"
-    >
-      Import PDF
-    </button>
-    <input
-      ref="fileInputRef"
-      type="file"
-      multiple
-      accept=".pdf"
-      class="hidden"
-      @change="onPick"
-    />
-
-    <div class="flex-1 overflow-y-auto space-y-2">
-      <div
-        v-for="doc in documents"
-        :key="doc.id"
-        :class="[
-          'p-3 rounded-lg cursor-pointer text-sm truncate transition',
-          activeId === doc.id
-            ? 'bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800'
-            : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
-        ]"
-        @click="select(doc.id)"
+    <div class="p-4">
+      <button
+        class="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        @click="fileInputRef?.click()"
       >
-        <i class="fa-solid fa-file-pdf mr-2"></i> {{ doc.name }}
-      </div>
+        Import PDF
+      </button>
+      <input
+        ref="fileInputRef"
+        type="file"
+        multiple
+        accept=".pdf"
+        class="hidden"
+        @change="onPick"
+      />
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-4 pb-4 space-y-6">
+      <DocList />
+      <ThreadList />
     </div>
   </aside>
 </template>
