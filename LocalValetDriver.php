@@ -24,7 +24,7 @@ class LocalValetDriver extends BasicValetDriver
     }
 
     /** Files that must never be cached — served manually so we can set headers. */
-    private const NO_CACHE_URIS = ['/sw.js', '/manifest.webmanifest', '/registerSW.js'];
+    private const NO_CACHE_URIS = ['/index.html', '/sw.js', '/manifest.webmanifest', '/registerSW.js'];
 
     /**
      * Resolve a request URI to a concrete file under dist/ (if one exists).

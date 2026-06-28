@@ -1,0 +1,78 @@
+- generic [ref=e3]:
+  - text:  
+  - generic [ref=e4]:
+    - complementary [ref=e5]:
+      - generic [ref=e6]:
+        - heading "Notebook" [level=1] [ref=e7]
+        - generic [ref=e8]:
+          - button "Install Notebook as an app" [ref=e9] [cursor=pointer]:
+            - generic [ref=e10]: 
+          - button "" [ref=e11] [cursor=pointer]:
+            - generic [ref=e12]: 
+          - text: 
+      - button "Import PDF" [ref=e14] [cursor=pointer]
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - heading "Documents" [level=2] [ref=e17]
+          - paragraph [ref=e18]: Import your first PDF to get started.
+        - generic [ref=e19]:
+          - heading "Threads" [level=2] [ref=e21]
+          - generic [ref=e22]:
+            - textbox "Search threads" [ref=e23]:
+              - /placeholder: Search threads…
+            - generic: 
+          - paragraph [ref=e24]: No conversations yet.
+    - main [ref=e25]:
+      - generic [ref=e26]: Select a document to view
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: 
+          - generic [ref=e31]: Chat
+          - generic [ref=e32]: No key
+        - generic [ref=e34]:
+          - button "" [disabled] [ref=e35]:
+            - generic [ref=e36]: 
+          - button "" [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]: 
+          - button "" [ref=e39] [cursor=pointer]:
+            - generic [ref=e40]: 
+          - text: 
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e44]: Provider
+          - generic [ref=e45]:
+            - button "OpenRouter" [ref=e46] [cursor=pointer]
+            - button "Gemini" [ref=e47] [cursor=pointer]
+        - generic [ref=e48]:
+          - generic [ref=e49]: API Key
+          - generic [ref=e50]:
+            - textbox "Enter your API key…" [ref=e51]
+            - button "" [ref=e52] [cursor=pointer]:
+              - generic [ref=e53]: 
+        - generic [ref=e54]:
+          - generic [ref=e55]: Model
+          - textbox "e.g. google/gemini-2.5-flash" [ref=e56]
+          - paragraph [ref=e57]: Any model from openrouter.ai/models
+        - generic [ref=e59] [cursor=pointer]:
+          - checkbox "OCR scanned pages First scan downloads a ~10MB model. English only for v1." [checked] [ref=e60]
+          - generic [ref=e61]:
+            - generic [ref=e62]: OCR scanned pages
+            - generic [ref=e63]: First scan downloads a ~10MB model. English only for v1.
+      - generic [ref=e65]:
+        - generic [ref=e67]: 
+        - paragraph [ref=e68]: Ask me anything
+        - paragraph [ref=e69]: Import a PDF or pick a thread to begin
+        - generic [ref=e70]:
+          - button "Summarise this in 3 bullet points." [ref=e71] [cursor=pointer]
+          - button "What are the key takeaways?" [ref=e72] [cursor=pointer]
+          - button "Quote the most important sentence from page 1." [ref=e73] [cursor=pointer]
+          - button "Explain this like I'm new to the topic." [ref=e74] [cursor=pointer]
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - textbox "Ask anything about the doc…" [ref=e77]
+          - button "" [disabled] [ref=e78]:
+            - generic [ref=e79]: 
+        - paragraph [ref=e80]:
+          - generic [ref=e81]: 
+          - text: Add an API key in settings to enable AI responses

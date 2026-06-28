@@ -42,3 +42,4 @@ public/standard-fonts/
 
 # Local docs (specs, plans, notes — kept on disk only)
 docs/
+.playwright-mcp/

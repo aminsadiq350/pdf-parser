@@ -12,6 +12,11 @@ function escapeHtml(s: string): string {
 		.replace(/'/g, '&#39;')
 }
 
+/** Count how many citation tokens are present in a text string. */
+export function countCitationTokens(text: string): number {
+	return [...text.matchAll(new RegExp(TOKEN_RE.source, TOKEN_RE.flags))].length
+}
+
 export function parseCitations(
 	text: string,
 	aliasToDocId: Map<string, number>,

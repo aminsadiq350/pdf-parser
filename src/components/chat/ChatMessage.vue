@@ -3,11 +3,10 @@ import { computed, onMounted, onUpdated, ref } from 'vue'
 import type { Message as Msg } from '@/types/domain'
 import { formatMessage } from '@/lib/format'
 import { renderMath } from '@/lib/katex'
-import { renderCitationsHtml } from '@/lib/citations'
+import { renderCitationsHtml, parseCitations, countCitationTokens } from '@/lib/citations'
 import { useDocuments } from '@/composables/useDocuments'
 import { usePdfViewer } from '@/composables/usePdfViewer'
 import { useThreads } from '@/composables/useThreads'
-import { parseCitations } from '@/lib/citations'
 import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 
 const props = defineProps<{ msg: Msg }>()
@@ -21,10 +20,11 @@ const { activeThread } = useThreads()
 // For users: skip — they don't emit citations.
 const rendered = computed(() => {
   if (props.msg.role === 'user') return formatMessage(props.msg.text)
-  // If citations weren't stored (old cached build, regex mismatch, etc.),
-  // re-derive them at render time from the active thread's doc ordering.
+  // If stored citations count doesn't match the actual tokens in the text
+  // (old cached build stored wrong/partial citations), re-derive from thread.
   let citations = props.msg.citations
-  if (!citations?.length && activeThread.value?.docIds.length) {
+  const tokenCount = countCitationTokens(props.msg.text)
+  if (tokenCount > 0 && (citations?.length ?? 0) !== tokenCount && activeThread.value?.docIds.length) {
     const aliasToDocId = new Map<string, number>()
     activeThread.value.docIds.forEach((id, i) => {
       aliasToDocId.set(String.fromCharCode(65 + i), id)
