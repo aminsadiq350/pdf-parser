@@ -54,6 +54,9 @@ async function deleteDoc(id: number): Promise<void> {
   // (see Task 7 of the M2 plan).
   const { getRetriever } = await import('@/lib/retrieval/index')
   await getRetriever().removeDocument(id)
+  // Drop from citation-preview cache (Group C).
+  const { invalidatePreviewCache } = await import('@/lib/pdfPreview')
+  invalidatePreviewCache(id)
 }
 
 async function getBlob(id: number): Promise<Blob | null> {
