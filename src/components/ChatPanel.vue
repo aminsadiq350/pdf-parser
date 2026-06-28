@@ -4,6 +4,7 @@ import ChatMessage from './chat/ChatMessage.vue'
 import ChatInput from './chat/ChatInput.vue'
 import TypingIndicator from './chat/TypingIndicator.vue'
 import AttachedDocsBar from './chat/AttachedDocsBar.vue'
+import QuickPrompts from './chat/QuickPrompts.vue'
 import { useChat } from '@/composables/useChat'
 import { useSettings } from '@/composables/useSettings'
 import { useThreads } from '@/composables/useThreads'
@@ -193,6 +194,7 @@ async function onSend(text: string) {
         </div>
         <p class="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">Ask me anything</p>
         <p class="text-xs text-zinc-400">{{ emptyStateNudge }}</p>
+        <QuickPrompts class="mt-4" />
       </div>
       <ChatMessage v-for="m in messages" :key="m.id" :msg="m" />
       <TypingIndicator v-if="isTyping" />
