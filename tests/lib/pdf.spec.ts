@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { extractTextByPage, loadPdf } from '@/lib/pdf'
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
 let data: ArrayBuffer
 
 beforeAll(() => {
