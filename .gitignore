@@ -40,5 +40,5 @@ Thumbs.db
 # Generated at build by vite-plugin-static-copy
 public/standard-fonts/
 
-# AI-generated specs / plans (kept locally, not tracked)
-docs/superpowers/
+# Local docs (specs, plans, notes — kept on disk only)
+docs/
