@@ -29,6 +29,8 @@ export default [
       ...vue.configs['flat/recommended'].rules,
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'vue/multi-word-component-names': 'off',
+      // TS handles undefined-name checking; ESLint's no-undef misses DOM lib types like HeadersInit.
+      'no-undef': 'off',
     },
   },
   {
