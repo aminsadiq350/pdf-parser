@@ -2,18 +2,28 @@
 import { ref } from 'vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useDocuments } from '@/composables/useDocuments'
+import { useThreads } from '@/composables/useThreads'
 import DocList from './sidebar/DocList.vue'
 import ThreadList from './sidebar/ThreadList.vue'
 
 const { isDark, toggle } = useDarkMode()
 const { importFiles } = useDocuments()
+const threads = useThreads()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 async function onPick(e: Event) {
   const target = e.target as HTMLInputElement
-  if (target.files) await importFiles(target.files)
+  if (!target.files || target.files.length === 0) return
+  const created = await importFiles(target.files)
   target.value = ''
+  // Auto-open a default thread for the first newly imported doc so the chat
+  // panel becomes immediately usable.
+  const first = created[0]
+  if (first?.id != null) {
+    const t = await threads.ensureDefaultThreadForDoc(first.id)
+    await threads.select(t.id!)
+  }
 }
 </script>
 
