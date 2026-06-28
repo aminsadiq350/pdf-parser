@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
 import { useDocuments } from '@/composables/useDocuments'
 import { usePdfViewer } from '@/composables/usePdfViewer'
 
 const { activeDoc } = useDocuments()
 const { currentPage, numPages, bindCanvas, prev, next } = usePdfViewer()
-
-const canvas = ref<HTMLCanvasElement | null>(null)
-onMounted(() => bindCanvas(canvas.value))
 </script>
 
 <template>
@@ -39,7 +35,7 @@ onMounted(() => bindCanvas(canvas.value))
         <div
           class="flex-1 overflow-y-auto p-4 flex justify-center bg-zinc-100 dark:bg-zinc-950"
         >
-          <canvas ref="canvas" class="shadow-lg max-w-full h-auto"></canvas>
+          <canvas :ref="(el) => bindCanvas(el as HTMLCanvasElement | null)" class="shadow-lg max-w-full h-auto"></canvas>
         </div>
       </div>
     </div>

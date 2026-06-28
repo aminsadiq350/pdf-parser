@@ -4,6 +4,12 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
 
+// PDF.js needs the standard fonts (Helvetica, Times, etc.) to render PDFs that
+// reference them without embedding. We serve these from /standard-fonts/ which
+// is populated from node_modules/pdfjs-dist/standard_fonts and committed under
+// public/ for v1. Revisit with vite-plugin-static-copy in M5.
+const STANDARD_FONT_DATA_URL = '/standard-fonts/'
+
 export interface PageText {
   pageNumber: number
   text: string
@@ -12,7 +18,10 @@ export interface PageText {
 /** Load a PDF from raw bytes. Caller is responsible for keeping `data` alive. */
 export async function loadPdf(data: ArrayBuffer): Promise<pdfjsLib.PDFDocumentProxy> {
   // Slice to detach from any caller's buffer that might be transferred.
-  return pdfjsLib.getDocument({ data: data.slice(0) }).promise
+  return pdfjsLib.getDocument({
+    data: data.slice(0),
+    standardFontDataUrl: STANDARD_FONT_DATA_URL,
+  }).promise
 }
 
 /** Extract per-page text. */
