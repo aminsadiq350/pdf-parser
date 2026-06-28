@@ -7,6 +7,7 @@ import { geminiUrl, geminiHeaders } from '@/lib/llm/gemini'
 import { SseReader, extractDelta } from '@/lib/llm/streamParser'
 import { getRetriever } from '@/lib/retrieval/index'
 import { parseCitations } from '@/lib/citations'
+import { estimateTokens } from '@/lib/tokenizer'
 import { useSettings } from './useSettings'
 import { useToasts } from './useToasts'
 import { useThreads } from './useThreads'
@@ -55,9 +56,9 @@ async function buildContextSection(
   const { aliasToDocId, docIdToAlias } = buildAliasMap(docs)
 
   // Decide full vs retrieve.
-  let totalChars = 0
-  for (const d of docs) for (const p of d.pages) totalChars += p.text.length
-  const estTokens = totalChars / 4
+  const allText: string[] = []
+  for (const d of docs) for (const p of d.pages) allText.push(p.text)
+  const estTokens = estimateTokens(allText.join('\n'))
 
   let chunks: Array<{ alias: string; pageNumber: number; text: string }>
   if (estTokens <= FULL_CONTEXT_BUDGET) {
