@@ -9,7 +9,7 @@ import { useSettings } from '@/composables/useSettings'
 import { useThreads } from '@/composables/useThreads'
 import { useDocuments } from '@/composables/useDocuments'
 
-const { messages, isTyping, send, clear } = useChat()
+const { messages, isTyping, isStreaming, send, clear, abort } = useChat()
 const { provider, apiKey, model, modelPlaceholder, modelHint } = useSettings()
 const { activeThread } = useThreads()
 const { documents } = useDocuments()
@@ -192,7 +192,7 @@ async function onSend(text: string) {
       <TypingIndicator v-if="isTyping" />
     </div>
 
-    <ChatInput :disabled="isTyping" @send="onSend">
+    <ChatInput :disabled="isTyping" :streaming="isStreaming" @send="onSend" @stop="abort">
       <template #hint>
         <p
           v-if="!isReady"
