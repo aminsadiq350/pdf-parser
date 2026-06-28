@@ -1,6 +1,7 @@
 // Vitest global setup. Extend as tests grow.
 import { vi } from 'vitest'
 import { createRequire } from 'node:module'
+import 'fake-indexeddb/auto'
 
 // Mock localStorage with an in-memory shim so useSettings tests run cleanly.
 class MemoryStorage {
