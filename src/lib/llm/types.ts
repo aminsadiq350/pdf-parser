@@ -4,7 +4,8 @@ export interface BuildPayloadInput {
   provider: Provider
   model: string
   history: Message[]
-  pdfText: string // empty string = no doc
+  /** Pre-formatted context block. Empty string = no-doc / general Q&A mode. */
+  contextSection: string
 }
 
 export interface OpenRouterPayload {
