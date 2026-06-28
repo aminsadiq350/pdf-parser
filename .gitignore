@@ -27,9 +27,7 @@ Thumbs.db
 
 # Editor
 .idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
@@ -44,5 +42,3 @@ public/standard-fonts/
 
 # AI-generated specs / plans (kept locally, not tracked)
 docs/superpowers/
-
-.vscode
