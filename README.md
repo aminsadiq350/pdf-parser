@@ -14,7 +14,7 @@ installs as a PWA and works offline once cached.
   extraction via PDF.js; OCR fallback via Tesseract.js for scanned pages.
 - **Chat with citations.** Bring your own OpenRouter or Gemini key. The model
   cites pages with `[A:p3]` tokens that we rewrite into clickable chips —
-  hover for an inline page preview, click to jump.
+  click to jump directly to that page in the viewer.
 - **Smart-context retrieval.** Small docs get fed in whole; large docs get
   BM25 chunk retrieval (token-budgeted via `gpt-tokenizer`'s `cl100k_base`).
 - **Threads per doc, library search.** Threads auto-name from your first
@@ -105,13 +105,15 @@ Examples: [useDocuments](src/composables/useDocuments.ts),
 
 ### Citation flow
 
-1. The model emits `[A:p3]` tokens against an alias legend the system prompt
-   defines.
-2. [parseCitations](src/lib/citations.ts) reads the streamed text and resolves
-   aliases to `{docId, pageNumber}` records persisted on the message.
+1. The model emits `[A:p3]` or `[A:page 3]` tokens against an alias legend
+   the system prompt defines.
+2. [parseCitations](src/lib/citations.ts) reads the streamed text after the
+   response completes and resolves aliases to `{docId, pageNumber}` records
+   persisted on the message.
 3. [renderCitationsHtml](src/lib/citations.ts) rewrites tokens into
-   `<button class="citation-chip">` elements that ChatMessage event-delegates
-   for hover preview + click-to-jump.
+   `<button class="citation-chip">` elements. If the stored citation count
+   doesn't match the token count in the text (e.g. message created with older
+   code), citations are re-derived at render time from the thread's doc order.
 
 ## Project layout
 
