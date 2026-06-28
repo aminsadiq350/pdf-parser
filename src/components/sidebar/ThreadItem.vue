@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Thread, Document } from '@/types/domain'
 import EditableLabel from '@/components/ui/EditableLabel.vue'
+import { useThreads } from '@/composables/useThreads'
 
 const props = defineProps<{
   thread: Thread
@@ -9,6 +10,8 @@ const props = defineProps<{
   active: boolean
 }>()
 defineEmits<{ select: []; rename: [name: string] }>()
+
+const { threadStats } = useThreads()
 
 const attached = computed(() =>
   props.thread.docIds
@@ -18,6 +21,10 @@ const attached = computed(() =>
 const visibleChips = computed(() => attached.value.slice(0, 3))
 const overflow = computed(() =>
   Math.max(0, attached.value.length - visibleChips.value.length),
+)
+
+const stats = computed(
+  () => threadStats.value[props.thread.id ?? -1] ?? { count: 0, lastSnippet: '' },
 )
 
 const label = computed(() => {
@@ -44,8 +51,21 @@ const label = computed(() => {
         :model-value="label"
         @commit="(name) => $emit('rename', name)"
       />
+      <span
+        v-if="stats.count > 0"
+        class="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono flex-shrink-0"
+        :title="`${stats.count} message${stats.count === 1 ? '' : 's'}`"
+      >
+        {{ stats.count }}
+      </span>
     </div>
-    <div v-if="attached.length > 0" class="flex items-center gap-1 flex-wrap">
+    <p
+      v-if="stats.lastSnippet"
+      class="text-[11px] text-zinc-400 dark:text-zinc-500 truncate pl-5"
+    >
+      {{ stats.lastSnippet }}
+    </p>
+    <div v-if="attached.length > 0" class="flex items-center gap-1 flex-wrap pl-5">
       <span
         v-for="d in visibleChips"
         :key="d.id"
