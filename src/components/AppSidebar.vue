@@ -1,16 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useDocuments } from '@/composables/useDocuments'
 import { useThreads } from '@/composables/useThreads'
+import { useDrawers } from '@/composables/useDrawers'
+import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 import DocList from './sidebar/DocList.vue'
 import ThreadList from './sidebar/ThreadList.vue'
 
 const { isDark, toggle } = useDarkMode()
 const { importFiles } = useDocuments()
 const threads = useThreads()
+const drawers = useDrawers()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const asideClasses = computed(() => [
+  // Mobile (< md): fixed left drawer
+  'fixed inset-y-0 left-0 z-40 w-[85vw] max-w-[20rem] transform transition-transform duration-200 will-change-transform',
+  drawers.left.value ? 'translate-x-0' : '-translate-x-full',
+  // Desktop (md+): static in flow, no transform
+  'md:static md:translate-x-0 md:w-72 md:z-auto md:transition-none',
+  // Shared chrome
+  'bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col',
+])
 
 async function onPick(e: Event) {
   const target = e.target as HTMLInputElement
@@ -24,23 +37,31 @@ async function onPick(e: Event) {
     const t = await threads.ensureDefaultThreadForDoc(first.id)
     await threads.select(t.id!)
   }
+  closeDrawersIfMobile()
 }
 </script>
 
 <template>
-  <aside
-    class="w-72 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col"
-  >
+  <aside :class="asideClasses">
     <div
       class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between"
     >
       <h1 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">Notebook</h1>
-      <button
-        class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
-        @click="toggle"
-      >
-        <i :class="['fa-solid', isDark ? 'fa-sun' : 'fa-moon']"></i>
-      </button>
+      <div class="flex items-center gap-1">
+        <button
+          class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+          @click="toggle"
+        >
+          <i :class="['fa-solid', isDark ? 'fa-sun' : 'fa-moon']"></i>
+        </button>
+        <button
+          class="md:hidden p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-zinc-500"
+          aria-label="Close menu"
+          @click="drawers.closeAll"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
     </div>
 
     <div class="p-4">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useDocuments } from '@/composables/useDocuments'
 import { useThreads } from '@/composables/useThreads'
+import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 import DocItem from './DocItem.vue'
 
 const { documents, activeId, select, delete: deleteDoc, rename } = useDocuments()
@@ -10,6 +11,7 @@ async function onSelect(id: number) {
   select(id)
   const t = await threads.ensureDefaultThreadForDoc(id)
   await threads.select(t.id!)
+  closeDrawersIfMobile()
 }
 
 async function onDelete(id: number) {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useDocuments } from '@/composables/useDocuments'
 import { useThreads } from '@/composables/useThreads'
+import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 import ThreadItem from './ThreadItem.vue'
 
 const { documents, activeId, select: selectDoc } = useDocuments()
@@ -10,6 +11,7 @@ async function onSelect(threadId: number) {
   await threads.select(threadId)
   const t = threads.threads.value.find((x) => x.id === threadId)
   if (t && t.docIds[0] != null) selectDoc(t.docIds[0])
+  closeDrawersIfMobile()
 }
 
 async function onRename(threadId: number, name: string) {
