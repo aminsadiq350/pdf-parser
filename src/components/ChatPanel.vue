@@ -10,11 +10,14 @@ import { useChat } from '@/composables/useChat'
 import { useSettings } from '@/composables/useSettings'
 import { useThreads } from '@/composables/useThreads'
 import { useDocuments } from '@/composables/useDocuments'
+import { useToasts } from '@/composables/useToasts'
+import { buildThreadMarkdown, downloadMarkdown, slugify } from '@/lib/exportThread'
 
 const { messages, isTyping, isStreaming, send, clear, abort } = useChat()
 const { provider, apiKey, model, modelPlaceholder, modelHint } = useSettings()
 const { activeThread, rename: renameThread } = useThreads()
 const { documents } = useDocuments()
+const { show: showToast } = useToasts()
 
 const showSettings = ref(false)
 const showApiKey = ref(false)
@@ -61,6 +64,16 @@ async function onSend(text: string) {
 async function onRenameThread(name: string) {
   if (activeThread.value) await renameThread(activeThread.value.id!, name)
 }
+
+function onExport() {
+  const t = activeThread.value
+  if (!t || messages.value.length === 0) return
+  const md = buildThreadMarkdown(t, [...messages.value], documents.value)
+  const date = new Date().toISOString().slice(0, 10)
+  const name = `notebook-${slugify(headerLabel.value)}-${date}.md`
+  downloadMarkdown(name, md)
+  showToast('Chat exported', 'success')
+}
 </script>
 
 <template>
@@ -93,6 +106,14 @@ async function onRenameThread(name: string) {
         </span>
       </div>
       <div class="flex items-center gap-1 flex-shrink-0">
+        <button
+          class="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Export chat as markdown"
+          :disabled="messages.length === 0"
+          @click="onExport"
+        >
+          <i class="fa-solid fa-download text-xs"></i>
+        </button>
         <button
           class="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
           title="Clear chat"
