@@ -48,10 +48,11 @@ export function renderCitationsHtml(
 		const docName = doc?.name ?? '(removed)'
 		const escaped = escapeHtml(docName)
 		const classAttr = stale ? 'citation-chip stale' : 'citation-chip'
-		const disabled = stale ? ' disabled title="document removed"' : ''
+		const titleAttr = stale ? ' disabled title="document removed"' : ` title="${escaped} · p.${cite.pageNumber}"`
 		return (
 			`<button class="${classAttr}" data-doc-id="${cite.docId}" ` +
-			`data-page="${cite.pageNumber}"${disabled}>${escaped} · p.${cite.pageNumber}</button>`
+			`data-page="${cite.pageNumber}"${titleAttr}>` +
+			`<span class="citation-chip__name">${escaped}</span> · p.${cite.pageNumber}</button>`
 		)
 	})
 }
