@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUpdated, ref } from 'vue'
-import type { ChatMessage as Msg } from '@/types/domain'
+import type { Message as Msg } from '@/types/domain'
 import { formatMessage } from '@/lib/format'
 import { renderMath } from '@/lib/katex'
 
