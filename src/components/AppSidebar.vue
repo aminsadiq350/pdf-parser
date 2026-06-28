@@ -4,6 +4,7 @@ import { useDarkMode } from '@/composables/useDarkMode'
 import { useDocuments } from '@/composables/useDocuments'
 import { useThreads } from '@/composables/useThreads'
 import { useDrawers } from '@/composables/useDrawers'
+import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 import DocList from './sidebar/DocList.vue'
 import ThreadList from './sidebar/ThreadList.vue'
@@ -12,6 +13,7 @@ const { isDark, toggle } = useDarkMode()
 const { importFiles } = useDocuments()
 const threads = useThreads()
 const drawers = useDrawers()
+const { canInstall, install } = useInstallPrompt()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
@@ -48,6 +50,15 @@ async function onPick(e: Event) {
     >
       <h1 class="text-lg font-bold text-indigo-600 dark:text-indigo-400">Notebook</h1>
       <div class="flex items-center gap-1">
+        <button
+          v-if="canInstall"
+          class="p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+          title="Install Notebook as an app"
+          aria-label="Install Notebook as an app"
+          @click="install"
+        >
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+        </button>
         <button
           class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
           @click="toggle"
