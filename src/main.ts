@@ -4,8 +4,14 @@ import './styles/main.css'
 import { initStore } from '@/lib/db'
 import { useDocuments } from '@/composables/useDocuments'
 import { useThreads } from '@/composables/useThreads'
+import { getRetriever } from '@/lib/retrieval/index'
 
 await initStore()
-await Promise.all([useDocuments().loadAll(), useThreads().loadAll()])
+const docs = useDocuments()
+const threads = useThreads()
+await Promise.all([docs.loadAll(), threads.loadAll()])
+await getRetriever().indexAll(
+  docs.documents.value.map((d) => ({ id: d.id!, name: d.name, pages: d.pages })),
+)
 
 createApp(App).mount('#app')
