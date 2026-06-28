@@ -58,7 +58,7 @@ async function buildContextSection(
   // Decide full vs retrieve.
   const allText: string[] = []
   for (const d of docs) for (const p of d.pages) allText.push(p.text)
-  const estTokens = estimateTokens(allText.join('\n'))
+  const estTokens = await estimateTokens(allText.join('\n'))
 
   let chunks: Array<{ alias: string; pageNumber: number; text: string }>
   if (estTokens <= FULL_CONTEXT_BUDGET) {
