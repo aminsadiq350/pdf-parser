@@ -41,11 +41,43 @@ async function ensureDefaultThreadForDoc(docId: number): Promise<Thread> {
 }
 
 async function select(threadId: number): Promise<void> {
+  // Group E: before swapping, sweep the previous thread if it was a
+  // never-used default. This keeps the sidebar from accruing empty
+  // nameless threads after rapid doc-tap exploration.
+  const prev = activeThreadId.value
+  if (prev != null && prev !== threadId) {
+    await cleanupIfEmpty(prev)
+  }
   activeThreadId.value = threadId
   activeMessages.value = await db.messages
     .where('[threadId+createdAt]')
     .between([threadId, 0], [threadId, Infinity])
     .toArray()
+}
+
+/**
+ * Group E: delete a thread iff it has no name AND no messages. Safe to
+ * call on a thread that no longer exists.
+ */
+async function cleanupIfEmpty(threadId: number): Promise<void> {
+  const t = threads.value.find((x) => x.id === threadId)
+  if (!t) return
+  if (t.name && t.name.trim() !== '') return
+  const count = await db.messages.where('threadId').equals(threadId).count()
+  if (count > 0) return
+  await deleteThread(threadId)
+}
+
+async function deleteThread(threadId: number): Promise<void> {
+  await db.transaction('rw', db.threads, db.messages, async () => {
+    await db.messages.where('threadId').equals(threadId).delete()
+    await db.threads.delete(threadId)
+  })
+  threads.value = threads.value.filter((t) => t.id !== threadId)
+  if (activeThreadId.value === threadId) {
+    activeThreadId.value = null
+    activeMessages.value = []
+  }
 }
 
 function bumpThreadInState(threadId: number, patch: Partial<Thread>): void {
@@ -142,6 +174,8 @@ export interface UseThreadsReturn {
   clearMessages: typeof clearMessages
   handleDocDeleted: typeof handleDocDeleted
   rename: typeof rename
+  cleanupIfEmpty: typeof cleanupIfEmpty
+  deleteThread: typeof deleteThread
 }
 
 export function useThreads(): UseThreadsReturn {
@@ -161,5 +195,7 @@ export function useThreads(): UseThreadsReturn {
     clearMessages,
     handleDocDeleted,
     rename,
+    cleanupIfEmpty,
+    deleteThread,
   }
 }
