@@ -3,9 +3,13 @@ import type * as pdfjsLib from 'pdfjs-dist'
 import { loadPdfFromBlob } from '@/lib/pdf'
 import { useDocuments } from './useDocuments'
 
+const SCALE_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0] as const
+const DEFAULT_SCALE = 1.5
+
 const currentPdf = shallowRef<pdfjsLib.PDFDocumentProxy | null>(null)
 const currentPage = ref(1)
 const numPages = ref(0)
+const scale = ref<number>(DEFAULT_SCALE)
 let canvas: HTMLCanvasElement | null = null
 
 // Strict serialization: every drawCurrent() chains onto the previous one so
@@ -44,7 +48,7 @@ function drawCurrent(): Promise<void> {
       activeRender = null
     }
     const page = await currentPdf.value.getPage(currentPage.value)
-    const vp = page.getViewport({ scale: 1.5 })
+    const vp = page.getViewport({ scale: scale.value })
     canvas.height = vp.height
     canvas.width = vp.width
     const ctx = canvas.getContext('2d')
@@ -63,7 +67,7 @@ function drawCurrent(): Promise<void> {
   return next
 }
 
-watch([currentPdf, currentPage], () => {
+watch([currentPdf, currentPage, scale], () => {
   if (canvas) void drawCurrent()
 })
 
@@ -90,6 +94,18 @@ function next() {
   void goTo(currentPage.value + 1)
 }
 
+function zoomIn() {
+  const i = SCALE_STEPS.indexOf(scale.value as (typeof SCALE_STEPS)[number])
+  if (i >= 0 && i < SCALE_STEPS.length - 1) scale.value = SCALE_STEPS[i + 1]
+}
+function zoomOut() {
+  const i = SCALE_STEPS.indexOf(scale.value as (typeof SCALE_STEPS)[number])
+  if (i > 0) scale.value = SCALE_STEPS[i - 1]
+}
+function resetZoom() {
+  scale.value = DEFAULT_SCALE
+}
+
 /**
  * Cross-doc-aware jump used by citation chips.
  * - Same doc, already loaded: just goTo(pageNumber).
@@ -110,6 +126,7 @@ export function usePdfViewer() {
     currentPdf,
     currentPage,
     numPages,
+    scale,
     setActive,
     bindCanvas,
     drawCurrent,
@@ -117,5 +134,8 @@ export function usePdfViewer() {
     next,
     goTo,
     jumpToPage,
+    zoomIn,
+    zoomOut,
+    resetZoom,
   }
 }
