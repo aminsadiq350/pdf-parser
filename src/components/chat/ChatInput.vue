@@ -9,6 +9,12 @@ const props = defineProps<{
 const emit = defineEmits<{ send: [text: string]; stop: [] }>()
 
 const value = ref('')
+const input = ref<HTMLInputElement | null>(null)
+
+function focus() {
+  input.value?.focus()
+}
+defineExpose({ focus })
 
 function submit() {
   if (props.streaming) {
@@ -32,6 +38,7 @@ function submit() {
     >
       <input
         v-model="value"
+        ref="input"
         type="text"
         :disabled="props.disabled && !props.streaming"
         :placeholder="props.placeholder ?? 'Ask anything about the doc…'"

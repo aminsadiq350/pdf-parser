@@ -17,7 +17,13 @@ const { documents } = useDocuments()
 const showSettings = ref(false)
 const showApiKey = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
+const inputRef = ref<InstanceType<typeof ChatInput> | null>(null)
 const isReady = computed(() => !!apiKey.value)
+
+function focusInput() {
+  inputRef.value?.focus()
+}
+defineExpose({ focusInput })
 
 const headerLabel = computed(() => {
   const t = activeThread.value
@@ -192,7 +198,7 @@ async function onSend(text: string) {
       <TypingIndicator v-if="isTyping" />
     </div>
 
-    <ChatInput :disabled="isTyping" :streaming="isStreaming" @send="onSend" @stop="abort">
+    <ChatInput :disabled="isTyping" :streaming="isStreaming" @send="onSend" @stop="abort" ref="inputRef">
       <template #hint>
         <p
           v-if="!isReady"
