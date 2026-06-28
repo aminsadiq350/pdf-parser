@@ -55,3 +55,45 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+
+.citation-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.4rem;
+  margin: 0 0.1rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 500;
+  border-radius: 9999px;
+  background: rgb(199 210 254); /* indigo-200 */
+  color: rgb(67 56 202); /* indigo-700 */
+  border: 1px solid rgb(165 180 252);
+  cursor: pointer;
+  vertical-align: baseline;
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.citation-chip:hover {
+  background: rgb(165 180 252); /* indigo-300 */
+  color: rgb(49 46 129); /* indigo-900 */
+}
+.dark .citation-chip {
+  background: rgba(99, 102, 241, 0.25);
+  color: rgb(199 210 254);
+  border-color: rgba(99, 102, 241, 0.45);
+}
+.dark .citation-chip:hover {
+  background: rgba(99, 102, 241, 0.4);
+}
+.citation-chip.stale {
+  background: rgb(228 228 231); /* zinc-200 */
+  color: rgb(113 113 122); /* zinc-500 */
+  border-color: rgb(212 212 216);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.dark .citation-chip.stale {
+  background: rgba(82, 82, 91, 0.45);
+  color: rgb(161 161 170);
+  border-color: rgba(82, 82, 91, 0.7);
+}
