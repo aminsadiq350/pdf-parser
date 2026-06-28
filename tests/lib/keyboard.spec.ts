@@ -47,4 +47,22 @@ describe('matchShortcut', () => {
     expect(matchShortcut(k({ key: 'a' }), null)).toBeNull()
     expect(matchShortcut(k({ key: 'Enter' }), null)).toBeNull()
   })
+
+  it('Meta+= / Meta++ returns zoomIn', () => {
+    expect(matchShortcut(k({ key: '=', metaKey: true }), null)).toBe('zoomIn')
+    expect(matchShortcut(k({ key: '+', metaKey: true }), null)).toBe('zoomIn')
+  })
+
+  it('Meta+- returns zoomOut', () => {
+    expect(matchShortcut(k({ key: '-', metaKey: true }), null)).toBe('zoomOut')
+  })
+
+  it('Meta+0 returns resetZoom', () => {
+    expect(matchShortcut(k({ key: '0', metaKey: true }), null)).toBe('resetZoom')
+  })
+
+  it('Meta+F returns openSearch', () => {
+    expect(matchShortcut(k({ key: 'f', metaKey: true }), null)).toBe('openSearch')
+    expect(matchShortcut(k({ key: 'F', ctrlKey: true }), null)).toBe('openSearch')
+  })
 })

@@ -6,6 +6,10 @@ export interface ShortcutHandlers {
   next(): void
   focusChat(): void
   closeOrBlur(): void
+  zoomIn(): void
+  zoomOut(): void
+  resetZoom(): void
+  openSearch(): void
 }
 
 export function useKeyboardShortcuts(h: ShortcutHandlers): void {
