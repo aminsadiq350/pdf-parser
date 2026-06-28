@@ -3,7 +3,7 @@ import { useDocuments } from '@/composables/useDocuments'
 import { useThreads } from '@/composables/useThreads'
 import DocItem from './DocItem.vue'
 
-const { documents, activeId, select, delete: deleteDoc } = useDocuments()
+const { documents, activeId, select, delete: deleteDoc, rename } = useDocuments()
 const threads = useThreads()
 
 async function onSelect(id: number) {
@@ -15,6 +15,10 @@ async function onSelect(id: number) {
 async function onDelete(id: number) {
   await deleteDoc(id)
   await threads.handleDocDeleted(id)
+}
+
+async function onRename(id: number, name: string) {
+  await rename(id, name)
 }
 </script>
 
@@ -35,6 +39,7 @@ async function onDelete(id: number) {
       :active="activeId === doc.id"
       @select="onSelect(doc.id!)"
       @delete="onDelete(doc.id!)"
+      @rename="(name) => onRename(doc.id!, name)"
     />
   </section>
 </template>

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Thread, Document } from '@/types/domain'
+import EditableLabel from '@/components/ui/EditableLabel.vue'
 
 const props = defineProps<{
   thread: Thread
   docs: readonly Document[]
   active: boolean
 }>()
-defineEmits<{ select: [] }>()
+defineEmits<{ select: []; rename: [name: string] }>()
 
 const attached = computed(() =>
   props.thread.docIds
@@ -38,7 +39,11 @@ const label = computed(() => {
   >
     <div class="flex items-center gap-2">
       <i class="fa-solid fa-comments text-zinc-400 text-xs"></i>
-      <span class="truncate">{{ label }}</span>
+      <EditableLabel
+        class="truncate flex-1"
+        :model-value="label"
+        @commit="(name) => $emit('rename', name)"
+      />
     </div>
     <div v-if="attached.length > 0" class="flex items-center gap-1 flex-wrap">
       <span

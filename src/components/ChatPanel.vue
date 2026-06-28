@@ -5,6 +5,7 @@ import ChatInput from './chat/ChatInput.vue'
 import TypingIndicator from './chat/TypingIndicator.vue'
 import AttachedDocsBar from './chat/AttachedDocsBar.vue'
 import QuickPrompts from './chat/QuickPrompts.vue'
+import EditableLabel from './ui/EditableLabel.vue'
 import { useChat } from '@/composables/useChat'
 import { useSettings } from '@/composables/useSettings'
 import { useThreads } from '@/composables/useThreads'
@@ -12,7 +13,7 @@ import { useDocuments } from '@/composables/useDocuments'
 
 const { messages, isTyping, isStreaming, send, clear, abort } = useChat()
 const { provider, apiKey, model, modelPlaceholder, modelHint } = useSettings()
-const { activeThread } = useThreads()
+const { activeThread, rename: renameThread } = useThreads()
 const { documents } = useDocuments()
 
 const showSettings = ref(false)
@@ -56,6 +57,10 @@ watch([messages, isTyping], scrollToBottom, { deep: true })
 async function onSend(text: string) {
   await send(text)
 }
+
+async function onRenameThread(name: string) {
+  if (activeThread.value) await renameThread(activeThread.value.id!, name)
+}
 </script>
 
 <template>
@@ -67,7 +72,13 @@ async function onSend(text: string) {
     >
       <div class="flex items-center gap-2 min-w-0">
         <i class="fa-solid fa-comments text-indigo-500 flex-shrink-0"></i>
-        <span class="font-semibold text-sm truncate">{{ headerLabel }}</span>
+        <EditableLabel
+          v-if="activeThread"
+          class="font-semibold text-sm truncate flex-1"
+          :model-value="headerLabel"
+          @commit="onRenameThread"
+        />
+        <span v-else class="font-semibold text-sm truncate">{{ headerLabel }}</span>
         <span
           v-if="isReady"
           class="flex items-center gap-1 text-[10px] text-emerald-500 font-medium ml-1 flex-shrink-0"

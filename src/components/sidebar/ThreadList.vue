@@ -12,6 +12,10 @@ async function onSelect(threadId: number) {
   if (t && t.docIds[0] != null) selectDoc(t.docIds[0])
 }
 
+async function onRename(threadId: number, name: string) {
+  await threads.rename(threadId, name)
+}
+
 async function onNew() {
   const docId = activeId.value
   const docIds = docId ? [docId] : []
@@ -46,6 +50,7 @@ async function onNew() {
       :docs="documents"
       :active="threads.activeThreadId.value === t.id"
       @select="onSelect(t.id!)"
+      @rename="(name) => onRename(t.id!, name)"
     />
   </section>
 </template>

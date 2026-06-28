@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Document } from '@/types/domain'
+import EditableLabel from '@/components/ui/EditableLabel.vue'
 defineProps<{ doc: Document; active: boolean }>()
-defineEmits<{ select: []; delete: [] }>()
+defineEmits<{ select: []; delete: []; rename: [name: string] }>()
 </script>
 
 <template>
@@ -16,7 +17,11 @@ defineEmits<{ select: []; delete: [] }>()
   >
     <i class="fa-solid fa-file-pdf text-zinc-400"></i>
     <div class="flex-1 min-w-0">
-      <div class="truncate">{{ doc.name }}</div>
+      <EditableLabel
+        class="block truncate"
+        :model-value="doc.name"
+        @commit="(name) => $emit('rename', name)"
+      />
       <div class="text-[10px] text-zinc-400">{{ doc.numPages }} pages</div>
     </div>
     <button
