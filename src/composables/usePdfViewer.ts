@@ -1,6 +1,6 @@
 import { ref, shallowRef, watch } from 'vue'
 import type * as pdfjsLib from 'pdfjs-dist'
-import { loadPdf } from '@/lib/pdf'
+import { loadPdfFromBlob } from '@/lib/pdf'
 
 const currentPdf = shallowRef<pdfjsLib.PDFDocumentProxy | null>(null)
 const currentPage = ref(1)
@@ -12,13 +12,13 @@ let canvas: HTMLCanvasElement | null = null
 let drawChain: Promise<void> = Promise.resolve()
 let activeRender: pdfjsLib.RenderTask | null = null
 
-async function setActive(data: ArrayBuffer | null): Promise<void> {
-  if (!data) {
+async function setActive(blob: Blob | null): Promise<void> {
+  if (!blob) {
     currentPdf.value = null
     numPages.value = 0
     return
   }
-  const pdf = await loadPdf(data)
+  const pdf = await loadPdfFromBlob(blob)
   // Setting these triggers the watch below, which schedules a draw.
   currentPdf.value = pdf
   numPages.value = pdf.numPages

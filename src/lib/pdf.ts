@@ -54,3 +54,26 @@ export async function renderPage(
   if (!ctx) throw new Error('No 2D context')
   await page.render({ canvasContext: ctx, viewport: vp }).promise
 }
+
+/** Load a PDF from a Blob (used by the viewer; Blob comes from Dexie). */
+export async function loadPdfFromBlob(blob: Blob): Promise<pdfjsLib.PDFDocumentProxy> {
+  const ab = await blob.arrayBuffer()
+  return loadPdf(ab)
+}
+
+/** One-pass load + extract used by useDocuments on import. */
+export async function readPdf(
+  data: ArrayBuffer,
+): Promise<{ numPages: number; pages: PageText[] }> {
+  const pdf = await loadPdf(data)
+  const pages: PageText[] = []
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    const text = content.items
+      .map((item) => ('str' in item ? (item as { str: string }).str : ''))
+      .join(' ')
+    if (text.trim()) pages.push({ pageNumber: i, text })
+  }
+  return { numPages: pdf.numPages, pages }
+}
