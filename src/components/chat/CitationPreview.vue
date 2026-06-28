@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import type * as pdfjsLib from 'pdfjs-dist'
 import { useDocuments } from '@/composables/useDocuments'
 import { useCitationPreview } from '@/composables/useCitationPreview'
@@ -27,7 +27,10 @@ const posStyle = computed(() => {
 })
 
 async function renderInto() {
-  if (!state.value.visible || !canvas.value) return
+  if (!state.value.visible) return
+  // Wait for v-if to mount the canvas (it's not yet bound when the watch fires).
+  await nextTick()
+  if (!canvas.value) return
   const { docId, pageNumber } = state.value
   if (docId == null || pageNumber == null) return
   loading.value = true
