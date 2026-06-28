@@ -1,5 +1,6 @@
 // Vitest global setup. Extend as tests grow.
 import { vi } from 'vitest'
+import { createRequire } from 'node:module'
 
 // Mock localStorage with an in-memory shim so useSettings tests run cleanly.
 class MemoryStorage {
@@ -13,3 +14,11 @@ class MemoryStorage {
 }
 
 vi.stubGlobal('localStorage', new MemoryStorage())
+
+// PDF.js worker resolution under jsdom: Vite's ?url import resolves to a
+// browser path, but PDF.js's "fake worker" fallback in Node tries to require
+// that exact string. Rewrite the import to the absolute filesystem path so
+// the fallback can load it.
+const req = createRequire(import.meta.url)
+const workerAbsPath = req.resolve('pdfjs-dist/build/pdf.worker.min.js')
+vi.mock('pdfjs-dist/build/pdf.worker.min.js?url', () => ({ default: workerAbsPath }))
