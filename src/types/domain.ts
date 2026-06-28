@@ -47,10 +47,19 @@ export interface Message {
   error?: boolean
 }
 
+/** Optional action surfaced inside a toast (e.g. 'Reload' on a PWA update). */
+export interface ToastAction {
+  label: string
+  handler: () => void
+}
+
 /** UI-only toast notification. */
 export interface Toast {
   id: number
   message: string
   type: 'success' | 'error' | 'info'
   leaving?: boolean
+  action?: ToastAction
+  /** When true the toast lives until its action is clicked or it is dismissed. */
+  sticky?: boolean
 }

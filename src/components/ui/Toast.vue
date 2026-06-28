@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useToasts } from '@/composables/useToasts'
-const { toasts } = useToasts()
+const { toasts, dismiss } = useToasts()
 </script>
 
 <template>
@@ -30,7 +30,22 @@ const { toasts } = useToasts()
               : 'fa-circle-check',
         ]"
       ></i>
-      {{ t.message }}
+      <span>{{ t.message }}</span>
+      <button
+        v-if="t.action"
+        class="ml-1 px-2 py-1 text-xs font-semibold bg-white/20 hover:bg-white/30 rounded transition"
+        @click="t.action.handler"
+      >
+        {{ t.action.label }}
+      </button>
+      <button
+        v-if="t.sticky"
+        class="ml-1 -mr-1 p-1 text-white/70 hover:text-white"
+        aria-label="Dismiss"
+        @click="dismiss(t.id)"
+      >
+        <i class="fa-solid fa-xmark text-xs"></i>
+      </button>
     </div>
   </div>
 </template>
