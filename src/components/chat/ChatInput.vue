@@ -31,6 +31,7 @@ function submit() {
 <template>
   <form
     class="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+    style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));"
     @submit.prevent="submit"
   >
     <div

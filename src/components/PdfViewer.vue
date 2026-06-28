@@ -21,11 +21,18 @@ const {
 
 const thumbsOpen = ref(false)
 const searchOpen = ref(false)
+const overflowOpen = ref(false)
 function openSearch() {
   searchOpen.value = true
 }
 function closeSearch() {
   searchOpen.value = false
+}
+function toggleOverflow() {
+  overflowOpen.value = !overflowOpen.value
+}
+function closeOverflow() {
+  overflowOpen.value = false
 }
 defineExpose({ openSearch })
 
@@ -45,72 +52,126 @@ watch(
 
 <template>
   <main class="flex-1 flex flex-col bg-zinc-100 dark:bg-zinc-950 overflow-hidden">
-    <div v-if="activeDoc" class="h-full flex flex-col p-6 overflow-hidden">
+    <div v-if="activeDoc" class="h-full flex flex-col p-2 md:p-6 overflow-hidden">
       <div
         class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 flex-1 flex flex-col overflow-hidden"
       >
         <div
-          class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800 gap-2"
+          class="p-3 md:p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800 gap-2"
         >
-          <span class="font-medium truncate text-sm">{{ activeDoc.name }}</span>
-          <div class="flex items-center gap-2">
+          <span class="font-medium truncate text-sm hidden md:inline">{{ activeDoc.name }}</span>
+          <div class="flex items-center gap-1 md:gap-2 ml-auto relative">
+            <!-- Desktop-only controls cluster (zoom + thumbs + search) -->
+            <div class="hidden md:flex items-center gap-2">
+              <button
+                class="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-500"
+                title="Zoom out (⌘−)"
+                @click="zoomOut"
+              >
+                <i class="fa-solid fa-magnifying-glass-minus text-xs"></i>
+              </button>
+              <button
+                class="px-2 py-1 text-[11px] font-medium rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-500"
+                title="Reset zoom (⌘0)"
+                @click="resetZoom"
+              >
+                {{ Math.round(scale * 100) }}%
+              </button>
+              <button
+                class="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-500"
+                title="Zoom in (⌘+)"
+                @click="zoomIn"
+              >
+                <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
+              </button>
+              <div class="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
+              <button
+                :class="[
+                  'p-1.5 rounded transition',
+                  thumbsOpen
+                    ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                    : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500',
+                ]"
+                title="Toggle page thumbnails"
+                @click="thumbsOpen = !thumbsOpen"
+              >
+                <i class="fa-solid fa-table-cells text-xs"></i>
+              </button>
+              <button
+                :class="[
+                  'p-1.5 rounded transition',
+                  searchOpen
+                    ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                    : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500',
+                ]"
+                title="Search in document (⌘F)"
+                @click="searchOpen = !searchOpen"
+              >
+                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+              </button>
+              <div class="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
+            </div>
+
+            <!-- Mobile overflow trigger -->
             <button
-              class="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-500"
-              title="Zoom out (⌘−)"
-              @click="zoomOut"
+              class="md:hidden w-9 h-9 inline-flex items-center justify-center rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-500"
+              title="More viewer actions"
+              aria-label="More viewer actions"
+              @click="toggleOverflow"
             >
-              <i class="fa-solid fa-magnifying-glass-minus text-xs"></i>
+              <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
             </button>
-            <button
-              class="px-2 py-1 text-[11px] font-medium rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-500"
-              title="Reset zoom (⌘0)"
-              @click="resetZoom"
+
+            <!-- Mobile overflow popover -->
+            <div
+              v-if="overflowOpen"
+              class="md:hidden absolute right-0 top-full mt-2 w-44 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg z-30 py-1"
             >
-              {{ Math.round(scale * 100) }}%
-            </button>
+              <button
+                class="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+                @click="zoomOut(); closeOverflow()"
+              >
+                <i class="fa-solid fa-magnifying-glass-minus w-4"></i>Zoom out
+              </button>
+              <button
+                class="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+                @click="resetZoom(); closeOverflow()"
+              >
+                <span class="w-4 text-center">{{ Math.round(scale * 100) }}%</span>Reset zoom
+              </button>
+              <button
+                class="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+                @click="zoomIn(); closeOverflow()"
+              >
+                <i class="fa-solid fa-magnifying-glass-plus w-4"></i>Zoom in
+              </button>
+              <div class="my-1 border-t border-zinc-200 dark:border-zinc-800"></div>
+              <button
+                class="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+                @click="thumbsOpen = !thumbsOpen; closeOverflow()"
+              >
+                <i class="fa-solid fa-table-cells w-4"></i>{{ thumbsOpen ? 'Hide' : 'Show' }} thumbnails
+              </button>
+              <button
+                class="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200"
+                @click="searchOpen = !searchOpen; closeOverflow()"
+              >
+                <i class="fa-solid fa-magnifying-glass w-4"></i>Search in page
+              </button>
+            </div>
+
             <button
-              class="p-1.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition text-zinc-500"
-              title="Zoom in (⌘+)"
-              @click="zoomIn"
-            >
-              <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
-            </button>
-            <div class="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-            <button
-              :class="[
-                'p-1.5 rounded transition',
-                thumbsOpen
-                  ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
-                  : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500',
-              ]"
-              title="Toggle page thumbnails"
-              @click="thumbsOpen = !thumbsOpen"
-            >
-              <i class="fa-solid fa-table-cells text-xs"></i>
-            </button>
-            <button
-              :class="[
-                'p-1.5 rounded transition',
-                searchOpen
-                  ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
-                  : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500',
-              ]"
-              title="Search in document (⌘F)"
-              @click="searchOpen = !searchOpen"
-            >
-              <i class="fa-solid fa-magnifying-glass text-xs"></i>
-            </button>
-            <div class="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-            <button
-              class="px-2 py-1 bg-white dark:bg-zinc-900 border rounded hover:bg-zinc-100"
+              class="w-9 h-9 md:w-auto md:h-auto inline-flex items-center justify-center md:px-2 md:py-1 bg-white dark:bg-zinc-900 border rounded hover:bg-zinc-100"
               @click="prev"
+              aria-label="Previous page"
             >
               <i class="fa-solid fa-chevron-left"></i>
             </button>
-            <span class="text-xs">{{ currentPage }} / {{ numPages }}</span>
+            <span class="text-xs whitespace-nowrap">{{ currentPage }} / {{ numPages }}</span>
             <button
-              class="px-2 py-1 bg-white dark:bg-zinc-900 border rounded hover:bg-zinc-100"
+              class="w-9 h-9 md:w-auto md:h-auto inline-flex items-center justify-center md:px-2 md:py-1 bg-white dark:bg-zinc-900 border rounded hover:bg-zinc-100"
               @click="next"
+              aria-label="Next page"
             >
               <i class="fa-solid fa-chevron-right"></i>
             </button>
