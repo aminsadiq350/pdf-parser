@@ -6,6 +6,8 @@ import { renderMath } from '@/lib/katex'
 import { renderCitationsHtml } from '@/lib/citations'
 import { useDocuments } from '@/composables/useDocuments'
 import { usePdfViewer } from '@/composables/usePdfViewer'
+import { useThreads } from '@/composables/useThreads'
+import { parseCitations } from '@/lib/citations'
 import { closeDrawersIfMobile } from '@/lib/responsiveDrawers'
 
 const props = defineProps<{ msg: Msg }>()
@@ -13,12 +15,23 @@ const root = ref<HTMLElement | null>(null)
 
 const { documents } = useDocuments()
 const { jumpToPage } = usePdfViewer()
+const { activeThread } = useThreads()
 
 // For assistants: rewrite citation tokens to <button> chips BEFORE markdown.
 // For users: skip — they don't emit citations.
 const rendered = computed(() => {
   if (props.msg.role === 'user') return formatMessage(props.msg.text)
-  const withChips = renderCitationsHtml(props.msg.text, props.msg.citations, documents.value)
+  // If citations weren't stored (old cached build, regex mismatch, etc.),
+  // re-derive them at render time from the active thread's doc ordering.
+  let citations = props.msg.citations
+  if (!citations?.length && activeThread.value?.docIds.length) {
+    const aliasToDocId = new Map<string, number>()
+    activeThread.value.docIds.forEach((id, i) => {
+      aliasToDocId.set(String.fromCharCode(65 + i), id)
+    })
+    ;({ citations } = parseCitations(props.msg.text, aliasToDocId))
+  }
+  const withChips = renderCitationsHtml(props.msg.text, citations, documents.value)
   return formatMessage(withChips)
 })
 
